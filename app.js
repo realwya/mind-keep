@@ -66,6 +66,7 @@ const elements = {
   noteForm: document.getElementById('noteForm'),
 
   // 笔记输入
+  noteTitleInput: document.getElementById('noteTitleInput'),
   noteContentInput: document.getElementById('noteContentInput'),
   closeNoteForm: document.getElementById('closeNoteForm'),
 
@@ -309,6 +310,7 @@ async function deleteFile(filename) {
 async function handleNoteSubmit(e) {
   e.preventDefault();
 
+  const title = elements.noteTitleInput.value.trim();
   const content = elements.noteContentInput.value.trim();
 
   if (!content) {
@@ -321,19 +323,20 @@ async function handleNoteSubmit(e) {
     collapseForm(); // 提前关闭表单
     await addLinkItem(content);
   } else {
-    // 普通笔记 - 自动检测标题
-    await addItem(content);
+    // 普通笔记
+    await addItem(title, content);
 
     // 清空
+    elements.noteTitleInput.value = '';
     elements.noteContentInput.value = '';
     collapseForm();
   }
 }
 
-async function addItem(content) {
-  // 自动检测标题作为文件名
-  const title = detectTitle(content);
-  const filename = `${title}.md`;
+async function addItem(title, content) {
+  // 如果标题为空，使用时间戳
+  const finalTitle = title || generateTimestampTitle();
+  const filename = `${finalTitle}.md`;
 
   try {
     // 写入文件系统
@@ -341,7 +344,7 @@ async function addItem(content) {
 
     // 更新内存状态 - 使用文件名（不含扩展名）作为 id
     const newItem = {
-      id: title,
+      id: finalTitle,
       content: content,
       createdAt: Date.now(),
       fileName: filename
@@ -379,7 +382,7 @@ async function addLinkItem(url) {
     const metadata = await fetchLinkMetadata(url);
 
     // 使用时间戳作为链接文件的文件名
-    const timestamp = detectTitle('');
+    const timestamp = generateTimestampTitle();
     const filename = `${timestamp}.md`;
 
     const frontMatterData = {
@@ -791,18 +794,8 @@ function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
 
-// 自动检测或生成标题
-function detectTitle(content) {
-  // 检测第一行是否是 markdown heading
-  const lines = content.trim().split('\n');
-  const firstLine = lines[0].trim();
-
-  const headingMatch = firstLine.match(/^#\s+(.+)$/);
-  if (headingMatch) {
-    return headingMatch[1].trim();
-  }
-
-  // 如果没有 heading，使用时间戳（精确到秒）
+// 生成时间戳标题（当标题为空时使用）
+function generateTimestampTitle() {
   const now = new Date();
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
