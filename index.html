@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>记事本 | Keep</title>
+  <meta name="description" content="像 Google Keep 一样记录链接和笔记">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+
+<body>
+  <div class="app">
+    <!-- 头部 -->
+    <header class="header">
+      <div class="logo">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+          <rect x="4" y="2" width="16" height="20" rx="2" fill="#FBBC04" />
+          <rect x="8" y="6" width="8" height="2" rx="1" fill="#fff" />
+          <rect x="8" y="10" width="8" height="2" rx="1" fill="#fff" />
+          <rect x="8" y="14" width="5" height="2" rx="1" fill="#fff" />
+        </svg>
+        <h1>Keep</h1>
+      </div>
+      <div class="header-actions">
+        <button id="changeFolderBtn" class="text-button" title="切换文件夹">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span id="folderName">未选择文件夹</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 文件夹选择引导 -->
+    <section id="folderPrompt" class="folder-prompt">
+      <div class="prompt-content">
+        <div class="prompt-icon">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ddd" stroke-width="1.5">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          </svg>
+        </div>
+        <h2>选择存储位置</h2>
+        <p>请选择一个本地文件夹来存储你的笔记和链接。<br>数据将直接保存在你的设备上。</p>
+        <button id="openFolderBtn" class="primary-button">打开文件夹</button>
+      </div>
+    </section>
+
+    <!-- 主内容区域 (默认隐藏，选择文件夹后显示) -->
+    <main id="mainContent" class="hidden">
+      <!-- 添加输入区域 - Google Keep 风格 -->
+      <section class="add-section">
+        <div id="addBox" class="add-box">
+          <!-- 收起状态 -->
+          <div id="addBoxCollapsed" class="add-box-collapsed">
+            <span class="add-placeholder">记录新内容...</span>
+          </div>
+
+          <!-- 展开状态 - 笔记 -->
+          <form id="noteForm" class="add-box-expanded hidden">
+            <textarea id="noteContentInput" class="content-input" placeholder="记录内容...（开头可用 # 标题）" rows="4"></textarea>
+            <div class="add-box-actions">
+              <div class="action-buttons">
+                <button type="button" class="text-button" id="closeNoteForm">关闭</button>
+                <button type="submit" class="text-button primary">保存</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- 卡片网格 - 瀑布流 -->
+      <section class="cards-section">
+        <div id="cardsGrid" class="cards-grid"></div>
+        <div id="emptyState" class="empty-state">
+          <svg width="120" height="120" viewBox="0 0 24 24" fill="none">
+            <rect x="4" y="2" width="16" height="20" rx="2" fill="#E8EAED" />
+            <rect x="8" y="6" width="8" height="2" rx="1" fill="#DADCE0" />
+            <rect x="8" y="10" width="8" height="2" rx="1" fill="#DADCE0" />
+            <rect x="8" y="14" width="5" height="2" rx="1" fill="#DADCE0" />
+          </svg>
+          <p>你添加的链接和笔记会显示在这里</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- 链接卡片模板 -->
+  <template id="linkCardTemplate">
+    <article class="card link-card">
+      <a class="card-link" href="#" target="_blank" rel="noopener noreferrer">
+        <div class="card-image">
+          <img src="" alt="" loading="lazy">
+        </div>
+        <div class="card-body">
+          <h3 class="card-title"></h3>
+          <p class="card-description"></p>
+          <span class="card-url">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+            <span class="url-text"></span>
+          </span>
+        </div>
+      </a>
+      <div class="card-actions">
+        <button class="icon-button delete-button" title="删除">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </button>
+      </div>
+    </article>
+  </template>
+
+  <!-- 链接加载中模板 -->
+  <template id="linkLoadingTemplate">
+    <article class="card link-card loading">
+      <div class="card-image skeleton"></div>
+      <div class="card-body">
+        <div class="card-title skeleton"></div>
+        <div class="card-description skeleton"></div>
+        <div class="card-url skeleton"></div>
+      </div>
+    </article>
+  </template>
+
+  <!-- 笔记卡片模板 -->
+  <template id="noteCardTemplate">
+    <article class="card note-card">
+      <div class="card-body">
+        <h3 class="card-title note-title"></h3>
+        <div class="note-content"></div>
+      </div>
+      <div class="card-actions">
+        <button class="icon-button delete-button" title="删除">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </button>
+      </div>
+    </article>
+  </template>
+
+  <!-- 编辑弹窗 -->
+  <div id="editModal" class="edit-modal hidden">
+    <div class="edit-modal-backdrop"></div>
+    <div class="edit-modal-container">
+      <div class="edit-modal-header">
+        <div class="edit-modal-title-info">
+          <span class="edit-modal-filename">文件名.md</span>
+          <span class="edit-modal-hint">编辑内容</span>
+        </div>
+        <button class="icon-button edit-modal-close" title="关闭">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="edit-modal-body">
+        <textarea id="editContentTextarea" class="edit-textarea" placeholder="编辑笔记内容..." spellcheck="false"></textarea>
+      </div>
+      <div class="edit-modal-footer">
+        <span class="char-count">0 字符</span>
+        <div class="edit-modal-actions">
+          <button class="text-button btn-cancel-edit">取消</button>
+          <button class="text-button primary btn-save-edit">保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
