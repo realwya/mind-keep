@@ -6,6 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a **Google Keep-style note-taking application** that runs entirely in the browser and stores data directly to the local filesystem using the **File System Access API**. No server or build process required - just open `index.html` in a supported browser (Chrome, Edge, Opera).
 
+### Features
+- **Add notes** with automatic title detection (`# Title` heading or timestamp)
+- **Add links** with automatic metadata fetching via Microlink API
+- **Edit notes** in a full-screen modal with auto-resize textarea
+- **Delete items** (moved to `.trash` folder, not permanently deleted)
+- **Markdown support** with front matter for link metadata
+
 ## Development
 
 ### Running the Application
@@ -79,11 +86,19 @@ image: https://example.com/image.jpg
    - Image selection logic prioritizes: main image → screenshot → logo
    - Creates front matter with metadata
 
-4. **UI Rendering**
+4. **Note Editing System**
+   - `openEditModal()` ([`app.js:505-515`](app.js#L505-L515)) - Opens edit modal with note content
+   - `saveEditedNote()` ([`app.js:530-577`](app.js#L530-L577)) - Saves changes to filesystem and updates UI
+   - `closeEditModal()` ([`app.js:518-527`](app.js#L518-L527)) - Handles unsaved changes confirmation
+   - `autoResizeTextarea()` ([`app.js:603-617`](app.js#L603-L617)) - Dynamically adjusts textarea height
+   - Full-screen modal with backdrop, keyboard shortcuts (ESC to close)
+
+5. **UI Rendering**
    - Uses HTML `<template>` elements ([`index.html:94-151`](index.html#L94-L151))
    - Masonry grid layout (CSS columns)
-   - Event delegation for card actions
+   - Event delegation for card actions ([`handleCardClick()`](app.js#L410-L501))
    - Custom confirmation overlay for delete (no native confirm())
+   - Edit modal with auto-resize textarea ([`styles.css:745-873`](styles.css#L745-L873))
 
 ### Front Matter Parsing
 
@@ -95,9 +110,11 @@ Custom YAML parser ([`app.js:523-538`](app.js#L523-L538)) - handles basic `key: 
 
 ### State Management
 
-- `items` array in memory ([`app.js:85`](app.js#L85)) - synced with filesystem
-- `dirHandle` ([`app.js:84`](app.js#L84)) - cached directory handle
-- `pendingUrls` Set ([`app.js:86`](app.js#L86)) - prevents duplicate link additions
+- `items` array in memory ([`app.js:96`](app.js#L96)) - synced with filesystem
+- `dirHandle` ([`app.js:95`](app.js#L95)) - cached directory handle
+- `pendingUrls` Set ([`app.js:97`](app.js#L97)) - prevents duplicate link additions
+- `currentEditingItem` ([`app.js:100`](app.js#L100)) - currently editing note
+- `isEditDirty` ([`app.js:101`](app.js#L101)) - tracks unsaved edits
 
 ## External Dependencies
 
@@ -108,20 +125,35 @@ Custom YAML parser ([`app.js:523-538`](app.js#L523-L538)) - handles basic `key: 
 ## File Structure
 
 ```
-├── index.html      # Main HTML with templates
+├── index.html      # Main HTML with templates and edit modal
 ├── app.js          # All application logic
 ├── styles.css      # Google Keep styling
+├── CLAUDE.md       # This file
 └── (user notes)    # Created at runtime in selected folder
     └── .trash/     # Deleted items
 ```
 
 ## Key Implementation Details
 
+### Title Detection
+Notes use automatic title detection ([`detectTitle()`](app.js#L655-L675)):
+- If content starts with `# Title`, uses that as filename
+- Otherwise generates timestamp filename: `20260205143125`
+- Filename becomes the note ID and is never changed on edit
+
 ### ID Generation
 IDs are generated using timestamp + random string: [`app.js:650-652`](app.js#L650-L652)
 ```javascript
 Date.now().toString(36) + Math.random().toString(36).slice(2)
 ```
+Note: For notes, the filename (without .md) is used as ID instead
+
+### Edit Flow
+1. Click note card → Opens full-screen edit modal
+2. Modal shows full markdown content (including `# Title` if present)
+3. Edit content → Save → Updates filesystem, memory, and UI
+4. Filename remains unchanged (only content is updated)
+5. Unsaved changes trigger confirmation on close
 
 ### Delete Flow
 1. Click delete → Show custom overlay
@@ -137,3 +169,7 @@ Single-line URL input automatically triggers link metadata fetch ([`app.js:305-3
 - Mobile-first responsive breakpoints at 1100px, 800px, 600px
 - Masonry layout using CSS columns (not JavaScript)
 - Skeleton loading animation for link fetch
+- Edit modal with auto-resize textarea ([`styles.css:818-831`](styles.css#L818-L831))
+  - Min-height: 200px, max-height: limited by viewport
+  - Dynamic height adjustment via JavaScript
+  - Backdrop with blur effect
