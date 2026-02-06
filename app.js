@@ -68,6 +68,7 @@ const elements = {
   // 笔记输入
   noteTitleInput: document.getElementById('noteTitleInput'),
   noteContentInput: document.getElementById('noteContentInput'),
+  noteTagsContainer: document.getElementById('noteTagsContainer'),
   closeNoteForm: document.getElementById('closeNoteForm'),
   saveNoteBtn: document.getElementById('saveNoteBtn'),
   titleError: document.getElementById('titleError'),
@@ -86,11 +87,23 @@ const elements = {
 const editModal = {
   modal: document.getElementById('editModal'),
   textarea: document.getElementById('editContentTextarea'),
+  tagsContainer: document.getElementById('editTagsContainer'),
   filename: document.querySelector('.edit-modal-filename'),
   charCount: document.querySelector('.char-count'),
   closeBtn: document.querySelector('.edit-modal-close'),
   saveBtn: document.querySelector('.btn-save-edit'),
   backdrop: document.querySelector('.edit-modal-backdrop')
+};
+
+// ===== 链接编辑弹窗 DOM =====
+const linkEditModal = {
+  modal: document.getElementById('linkEditModal'),
+  form: document.getElementById('linkEditForm'),
+  tagsContainer: document.getElementById('linkEditTagsContainer'),
+  filename: document.querySelector('#linkEditModal .edit-modal-filename'),
+  closeBtn: document.querySelector('.link-edit-close'),
+  saveBtn: document.querySelector('.btn-save-link-edit'),
+  backdrop: document.querySelector('#linkEditModal .edit-modal-backdrop')
 };
 
 // ===== 状态管理 =====
@@ -101,10 +114,143 @@ const pendingUrls = new Set();
 // 编辑相关状态
 let currentEditingItem = null;
 
+// TagsInput 组件实例
+let noteTagsInput = null;
+let editTagsInput = null;
+let linkEditTagsInput = null;
+
+// ===== TagsInput 组件 =====
+class TagsInput {
+  constructor(container, options = {}) {
+    this.tags = [];
+    this.container = container;
+    this.placeholder = options.placeholder || '添加标签（按回车）';
+    this.maxTags = options.maxTags || Infinity;
+    this.onChange = options.onChange || (() => {});
+
+    this.init();
+  }
+
+  init() {
+    this.container.classList.add('tags-input-container');
+
+    // 创建输入框
+    this.input = document.createElement('input');
+    this.input.type = 'text';
+    this.input.className = 'tags-input-field';
+    this.input.placeholder = this.placeholder;
+    this.container.appendChild(this.input);
+
+    // 绑定事件
+    this.input.addEventListener('keydown', (e) => this.handleKeyDown(e));
+    this.input.addEventListener('blur', () => this.handleBlur());
+  }
+
+  handleKeyDown(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      this.addTag(this.input.value.trim());
+    } else if (e.key === 'Backspace' && this.input.value === '' && this.tags.length > 0) {
+      this.removeTag(this.tags.length - 1);
+    } else if (e.key === ',' && this.input.value.trim()) {
+      e.preventDefault();
+      this.addTag(this.input.value.trim());
+    }
+  }
+
+  handleBlur() {
+    // 失焦时如果有内容，尝试添加为标签
+    const value = this.input.value.trim();
+    if (value) {
+      this.addTag(value);
+    }
+  }
+
+  addTag(text) {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    if (this.tags.includes(trimmed)) {
+      this.input.value = '';
+      return;
+    }
+    if (this.tags.length >= this.maxTags) {
+      alert('最多添加 ' + this.maxTags + ' 个标签');
+      return;
+    }
+
+    this.tags.push(trimmed);
+    this.render();
+    this.input.value = '';
+    this.onChange(this.tags);
+  }
+
+  removeTag(index) {
+    this.tags.splice(index, 1);
+    this.render();
+    this.onChange(this.tags);
+  }
+
+  getTags() {
+    return [...this.tags];
+  }
+
+  setTags(tags) {
+    this.tags = Array.isArray(tags) ? [...tags] : [];
+    this.render();
+    this.onChange(this.tags);
+  }
+
+  clear() {
+    this.tags = [];
+    this.render();
+    this.onChange(this.tags);
+  }
+
+  render() {
+    // 移除旧的标签元素（保留输入框）
+    const oldTags = this.container.querySelectorAll('.tag');
+    oldTags.forEach(t => t.remove());
+
+    // 在输入框之前插入标签
+    this.tags.forEach((tag, index) => {
+      const tagEl = document.createElement('span');
+      tagEl.className = 'tag';
+      tagEl.innerHTML = `
+        ${this.escapeHtml(tag)}
+        <span class="tag-remove" data-index="${index}">&times;</span>
+      `;
+
+      // 点击删除按钮
+      tagEl.querySelector('.tag-remove').addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.removeTag(index);
+      });
+
+      this.container.insertBefore(tagEl, this.input);
+    });
+  }
+
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  focus() {
+    this.input.focus();
+  }
+}
+
 // ===== 初始化 =====
 async function init() {
+  // 初始化 TagsInput 组件
+  noteTagsInput = new TagsInput(elements.noteTagsContainer);
+  editTagsInput = new TagsInput(editModal.tagsContainer);
+  linkEditTagsInput = new TagsInput(linkEditModal.tagsContainer);
+
   bindEvents();
   bindEditModalEvents();
+  bindLinkEditModalEvents();
 
   // 检查是否有缓存的句柄
   try {
@@ -315,6 +461,7 @@ async function handleNoteSubmit(e) {
 
   const title = elements.noteTitleInput.value.trim();
   const content = elements.noteContentInput.value.trim();
+  const tags = noteTagsInput ? noteTagsInput.getTags() : [];
 
   if (!content) {
     collapseForm();
@@ -324,7 +471,7 @@ async function handleNoteSubmit(e) {
   // 单行链接检查
   if (isValidUrl(content)) {
     collapseForm(); // 提前关闭表单
-    await addLinkItem(content);
+    await addLinkItem(content, tags);
   } else {
     // 检查标题是否已存在
     if (title && isTitleExists(title)) {
@@ -334,29 +481,36 @@ async function handleNoteSubmit(e) {
     }
 
     // 普通笔记
-    await addItem(title, content);
+    await addItem(title, content, tags);
 
     // 清空
     clearTitleError();
     elements.noteTitleInput.value = '';
     elements.noteContentInput.value = '';
+    noteTagsInput.clear();
     collapseForm();
   }
 }
 
-async function addItem(title, content) {
+async function addItem(title, content, tags = []) {
   // 如果标题为空，使用时间戳
   const finalTitle = title || generateTimestampTitle();
   const filename = `${finalTitle}.md`;
 
+  // 如果有 tags，使用 front matter
+  let finalContent = content;
+  if (tags.length > 0) {
+    finalContent = createMarkdownWithFrontMatter({ tags: tags.join(',') }, content);
+  }
+
   try {
     // 写入文件系统
-    await saveFile(filename, content);
+    await saveFile(filename, finalContent);
 
     // 更新内存状态 - 使用文件名（不含扩展名）作为 id
     const newItem = {
       id: finalTitle,
-      content: content,
+      content: finalContent,
       createdAt: Date.now(),
       fileName: filename
     };
@@ -372,7 +526,7 @@ async function addItem(title, content) {
   }
 }
 
-async function addLinkItem(url) {
+async function addLinkItem(url, tags = []) {
   if (items.some(item => {
     const { data } = parseFrontMatter(item.content);
     return data.type === 'link' && data.url === url;
@@ -413,6 +567,11 @@ async function addLinkItem(url) {
       description: (metadata.description || '').replace(/\n/g, ' '),
       image: metadata.image || ''
     };
+
+    // 如果有 tags，添加到 front matter
+    if (tags.length > 0) {
+      frontMatterData.tags = tags.join(',');
+    }
 
     const markdownContent = createMarkdownWithFrontMatter(frontMatterData);
 
@@ -523,15 +682,7 @@ async function handleCardClick(e) {
   const item = items.find(i => i.id === id);
   if (!item) return;
 
-  // 判断卡片类型
-  const { data } = parseFrontMatter(item.content);
-
-  // 链接卡片不处理编辑（保持默认跳转行为）
-  if (data.type === 'link') {
-    return;
-  }
-
-  // 笔记卡片打开编辑弹窗
+  // 打开编辑弹窗（链接或笔记）
   e.preventDefault();
   e.stopPropagation();
   openEditModal(item);
@@ -542,9 +693,28 @@ async function handleCardClick(e) {
 function openEditModal(item) {
   currentEditingItem = item;
 
-  editModal.textarea.value = item.content;
+  // 解析现有内容
+  const { data, content } = parseFrontMatter(item.content);
+
+  if (data.type === 'link') {
+    // 打开链接编辑弹窗
+    openLinkEditModal(item, data);
+  } else {
+    // 打开笔记编辑弹窗
+    openNoteEditModal(item, data, content);
+  }
+}
+
+// 打开笔记编辑弹窗
+function openNoteEditModal(item, data, content) {
+  // 填充内容（不包含 front matter）
+  editModal.textarea.value = content;
   editModal.filename.textContent = item.fileName;
-  updateCharCount(item.content);
+  updateCharCount(content);
+
+  // 填充 tags
+  const tags = data.tags ? data.tags.split(',').map(t => t.trim()) : [];
+  editTagsInput.setTags(tags);
 
   // 重置保存按钮状态
   editModal.saveBtn.disabled = false;
@@ -554,7 +724,23 @@ function openEditModal(item) {
   editModal.textarea.focus();
 }
 
-// 关闭编辑弹窗（自动保存）
+// 打开链接编辑弹窗
+function openLinkEditModal(item, data) {
+  // 填充表单
+  linkEditModal.form.title.value = data.title || '';
+  linkEditModal.form.url.value = data.url || '';
+  linkEditModal.form.description.value = data.description || '';
+  linkEditModal.form.image.value = data.image || '';
+  linkEditModal.filename.textContent = item.fileName;
+
+  // 填充 tags
+  const tags = data.tags ? data.tags.split(',').map(t => t.trim()) : [];
+  linkEditTagsInput.setTags(tags);
+
+  linkEditModal.modal.classList.remove('hidden');
+}
+
+// 关闭笔记编辑弹窗（自动保存）
 async function closeEditModal() {
   if (!currentEditingItem) {
     editModal.modal.classList.add('hidden');
@@ -578,39 +764,62 @@ async function saveEditedNote() {
     return false;
   }
 
+  // 获取 tags
+  const tags = editTagsInput.getTags();
+
   editModal.saveBtn.disabled = true;
   editModal.saveBtn.textContent = '保存中...';
 
   try {
+    // 解析原有 front matter（保留其他属性）
+    const { data: originalData } = parseFrontMatter(currentEditingItem.content);
+
+    // 构建新的 front matter 数据
+    const frontMatterData = { ...originalData };
+    if (tags.length > 0) {
+      frontMatterData.tags = tags.join(',');
+    } else {
+      delete frontMatterData.tags;
+    }
+
+    // 生成新内容
+    let finalContent = newContent;
+    if (Object.keys(frontMatterData).length > 0) {
+      finalContent = createMarkdownWithFrontMatter(frontMatterData, newContent);
+    }
+
     // 1. 保存到文件系统
-    await saveFile(currentEditingItem.fileName, newContent);
+    await saveFile(currentEditingItem.fileName, finalContent);
 
     // 2. 更新内存
     const index = items.findIndex(i => i.id === currentEditingItem.id);
     if (index !== -1) {
-      items[index].content = newContent;
+      items[index].content = finalContent;
       items[index].createdAt = Date.now();
     }
 
     // 3. 更新 UI（局部更新卡片）
     const card = document.querySelector(`.card[data-id="${currentEditingItem.id}"]`);
     if (card) {
-      const { content: bodyContent } = parseFrontMatter(newContent);
-      let body = bodyContent;
-      const titleMatch = bodyContent.match(/^#\s+(.*)\n/);
+      let body = newContent;
+      const titleMatch = newContent.match(/^#\s+(.*)\n/);
       if (titleMatch) {
-        body = bodyContent.replace(/^#\s+.*\n/, '').trim();
+        body = newContent.replace(/^#\s+.*\n/, '').trim();
       }
 
       const titleEl = card.querySelector('.note-title');
       const contentEl = card.querySelector('.note-content');
+      const tagsEl = card.querySelector('.card-tags');
+
       if (titleEl) titleEl.textContent = currentEditingItem.id;
       if (contentEl) contentEl.innerHTML = marked.parse(body);
+      if (tagsEl) renderTags(tagsEl, tags);
     }
 
     // 重置状态
     currentEditingItem = null;
     editModal.textarea.value = '';
+    editTagsInput.clear();
 
     return true;
 
@@ -655,6 +864,126 @@ function bindEditModalEvents() {
     .addEventListener('click', (e) => e.stopPropagation());
 }
 
+// 绑定链接编辑弹窗事件
+function bindLinkEditModalEvents() {
+  linkEditModal.closeBtn.addEventListener('click', () => closeLinkEditModal());
+  linkEditModal.saveBtn.addEventListener('click', async () => {
+    const saved = await saveLinkEdit();
+    if (saved) {
+      linkEditModal.modal.classList.add('hidden');
+    }
+  });
+  linkEditModal.backdrop.addEventListener('click', () => closeLinkEditModal());
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !linkEditModal.modal.classList.contains('hidden')) {
+      closeLinkEditModal();
+    }
+  });
+
+  linkEditModal.modal.querySelector('.edit-modal-container')
+    .addEventListener('click', (e) => e.stopPropagation());
+}
+
+// 关闭链接编辑弹窗（自动保存）
+async function closeLinkEditModal() {
+  if (!currentEditingItem) {
+    linkEditModal.modal.classList.add('hidden');
+    return;
+  }
+
+  // 自动保存
+  const saved = await saveLinkEdit();
+  if (saved) {
+    linkEditModal.modal.classList.add('hidden');
+  }
+}
+
+// 保存链接编辑
+async function saveLinkEdit() {
+  if (!currentEditingItem) return false;
+
+  // 获取表单数据
+  const formData = {
+    type: 'link',
+    title: linkEditModal.form.title.value.trim(),
+    url: linkEditModal.form.url.value.trim(),
+    description: linkEditModal.form.description.value.trim(),
+    image: linkEditModal.form.image.value.trim(),
+  };
+
+  if (!formData.url) {
+    alert('链接不能为空');
+    return false;
+  }
+
+  const tags = linkEditTagsInput.getTags();
+  if (tags.length > 0) {
+    formData.tags = tags.join(',');
+  }
+
+  // 生成 front matter 内容
+  const content = createMarkdownWithFrontMatter(formData);
+
+  linkEditModal.saveBtn.disabled = true;
+  linkEditModal.saveBtn.textContent = '保存中...';
+
+  try {
+    // 1. 保存到文件系统
+    await saveFile(currentEditingItem.fileName, content);
+
+    // 2. 更新内存
+    const index = items.findIndex(i => i.id === currentEditingItem.id);
+    if (index !== -1) {
+      items[index].content = content;
+      items[index].createdAt = Date.now();
+    }
+
+    // 3. 更新 UI（局部更新卡片）
+    const card = document.querySelector(`.card[data-id="${currentEditingItem.id}"]`);
+    if (card) {
+      const titleEl = card.querySelector('.card-title');
+      const descEl = card.querySelector('.card-description');
+      const urlEl = card.querySelector('.url-text');
+      const imgEl = card.querySelector('.card-image img');
+      const openLinkBtn = card.querySelector('.open-link-button');
+      const tagsEl = card.querySelector('.card-tags');
+
+      if (titleEl) titleEl.textContent = formData.title;
+      if (descEl) descEl.textContent = formData.description;
+      if (urlEl) urlEl.textContent = extractDomain(formData.url);
+      if (openLinkBtn) openLinkBtn.href = formData.url;
+      if (imgEl) {
+        if (formData.image) {
+          imgEl.src = formData.image;
+          imgEl.classList.remove('error');
+        } else {
+          imgEl.classList.add('error');
+        }
+      }
+      if (tagsEl) renderTags(tagsEl, tags);
+    }
+
+    // 重置状态
+    currentEditingItem = null;
+    linkEditModal.form.reset();
+    linkEditTagsInput.clear();
+
+    // 重置按钮状态
+    linkEditModal.saveBtn.disabled = false;
+    linkEditModal.saveBtn.textContent = '保存';
+
+    return true;
+
+  } catch (e) {
+    console.error('Save failed:', e);
+    alert('保存失败: ' + e.message);
+    linkEditModal.saveBtn.disabled = false;
+    linkEditModal.saveBtn.textContent = '保存';
+    return false;
+  }
+}
+
 // ===== 渲染 & 工具 (复用原有逻辑) =====
 function renderItems() {
   elements.cardsGrid.innerHTML = '';
@@ -678,10 +1007,14 @@ function renderOneItem(item, prepend) {
       body = content.replace(/^#\s+.*\n/, '').trim();
     }
 
+    // 解析 tags
+    const tags = data.tags ? data.tags.split(',').map(t => t.trim()) : [];
+
     card = createNoteCard({
       id: item.id,
       title: title,
-      content: body
+      content: body,
+      tags: tags
     });
   }
 
@@ -739,8 +1072,12 @@ function createLinkCard(data) {
   const template = elements.linkCardTemplate.content.cloneNode(true);
   const card = template.querySelector('.card');
   card.dataset.id = data.id;
-  const cardLink = card.querySelector('.card-link');
-  cardLink.href = data.url;
+
+  // 设置打开链接按钮的 href
+  const openLinkBtn = card.querySelector('.open-link-button');
+  if (openLinkBtn) {
+    openLinkBtn.href = data.url;
+  }
 
   const img = card.querySelector('.card-image img');
   if (data.image) {
@@ -754,6 +1091,14 @@ function createLinkCard(data) {
   card.querySelector('.card-title').textContent = data.title;
   card.querySelector('.card-description').textContent = data.description;
   card.querySelector('.url-text').textContent = extractDomain(data.url);
+
+  // 渲染 tags
+  const tags = data.tags ? data.tags.split(',').map(t => t.trim()) : [];
+  const tagsEl = card.querySelector('.card-tags');
+  if (tagsEl) {
+    renderTags(tagsEl, tags);
+  }
+
   return card;
 }
 
@@ -768,7 +1113,27 @@ function createNoteCard(data) {
   const contentEl = card.querySelector('.note-content');
   if (data.content) contentEl.innerHTML = marked.parse(data.content);
 
+  // 渲染 tags
+  const tags = data.tags || [];
+  const tagsEl = card.querySelector('.card-tags');
+  if (tagsEl) {
+    renderTags(tagsEl, tags);
+  }
+
   return card;
+}
+
+// 渲染 tags 到容器
+function renderTags(container, tags) {
+  container.innerHTML = '';
+  if (!tags || tags.length === 0) return;
+
+  tags.forEach(tag => {
+    const tagEl = document.createElement('span');
+    tagEl.className = 'tag';
+    tagEl.textContent = tag;
+    container.appendChild(tagEl);
+  });
 }
 
 function createLoadingCard() {
