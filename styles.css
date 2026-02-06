@@ -162,6 +162,26 @@ body {
   font-weight: 500;
 }
 
+.title-input.error {
+  color: var(--error-color);
+}
+
+.text-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.title-error {
+  padding: 0.25rem 0;
+  font-size: 0.75rem;
+  color: var(--error-color);
+  display: none;
+}
+
+.title-error.visible {
+  display: block;
+}
+
 .content-input {
   width: 100%;
   padding: 0.5rem 0;

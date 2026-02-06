@@ -63,11 +63,12 @@
           <!-- 展开状态 - 笔记 -->
           <form id="noteForm" class="add-box-expanded hidden">
             <input type="text" id="noteTitleInput" class="title-input" placeholder="标题（可选）">
+            <div class="title-error" id="titleError"></div>
             <textarea id="noteContentInput" class="content-input" placeholder="记录内容..." rows="3"></textarea>
             <div class="add-box-actions">
               <div class="action-buttons">
                 <button type="button" class="text-button" id="closeNoteForm">关闭</button>
-                <button type="submit" class="text-button primary">保存</button>
+                <button type="submit" class="text-button primary" id="saveNoteBtn">保存</button>
               </div>
             </div>
           </form>

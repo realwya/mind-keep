@@ -69,6 +69,8 @@ const elements = {
   noteTitleInput: document.getElementById('noteTitleInput'),
   noteContentInput: document.getElementById('noteContentInput'),
   closeNoteForm: document.getElementById('closeNoteForm'),
+  saveNoteBtn: document.getElementById('saveNoteBtn'),
+  titleError: document.getElementById('titleError'),
 
   // 卡片
   cardsGrid: document.getElementById('cardsGrid'),
@@ -135,6 +137,9 @@ function bindEvents() {
 
   // 关闭表单
   elements.closeNoteForm.addEventListener('click', collapseForm);
+
+  // 标题输入验证
+  elements.noteTitleInput.addEventListener('input', handleTitleInput);
 
   // 提交表单
   elements.noteForm.addEventListener('submit', handleNoteSubmit);
@@ -321,10 +326,18 @@ async function handleNoteSubmit(e) {
     collapseForm(); // 提前关闭表单
     await addLinkItem(content);
   } else {
+    // 检查标题是否已存在
+    if (title && isTitleExists(title)) {
+      showTitleError('该标题已存在，请使用其他标题');
+      elements.noteTitleInput.focus();
+      return;
+    }
+
     // 普通笔记
     await addItem(title, content);
 
     // 清空
+    clearTitleError();
     elements.noteTitleInput.value = '';
     elements.noteContentInput.value = '';
     collapseForm();
@@ -381,7 +394,17 @@ async function addLinkItem(url) {
 
     // 使用链接标题作为文件名（清理不适合文件名的字符）
     const rawTitle = metadata.title || extractDomain(url);
-    const filename = `${sanitizeFilename(rawTitle)}.md`;
+    const sanitizedTitle = sanitizeFilename(rawTitle);
+
+    // 检查标题是否已存在
+    if (isTitleExists(sanitizedTitle)) {
+      loadingCard.remove();
+      alert(`标题 "${rawTitle}" 已存在，该链接可能是重复的`);
+      updateEmptyState();
+      return;
+    }
+
+    const filename = `${sanitizedTitle}.md`;
 
     const frontMatterData = {
       type: 'link',
@@ -703,6 +726,7 @@ function createMarkdownWithFrontMatter(data, content = '') {
 function expandNoteForm() {
   elements.addBoxCollapsed.classList.add('hidden');
   elements.noteForm.classList.remove('hidden');
+  clearTitleError();
   elements.noteContentInput.focus();
 }
 
@@ -839,6 +863,50 @@ function generateTimestampTitle() {
   const seconds = String(now.getSeconds()).padStart(2, '0');
 
   return `${year}${month}${day}${hours}${minutes}${seconds}`;
+}
+
+// ===== 标题验证相关 =====
+
+// 检查标题是否已存在
+function isTitleExists(title) {
+  const sanitizedTitle = sanitizeFilename(title);
+  return items.some(item => {
+    // 对于笔记，id 就是文件名（不含扩展名）
+    // 对于链接，id 也是文件名（不含扩展名）
+    return item.id === sanitizedTitle;
+  });
+}
+
+// 标题输入处理
+function handleTitleInput() {
+  const title = elements.noteTitleInput.value.trim();
+
+  if (!title) {
+    clearTitleError();
+    return;
+  }
+
+  if (isTitleExists(title)) {
+    showTitleError('该标题已存在，请使用其他标题');
+  } else {
+    clearTitleError();
+  }
+}
+
+// 显示标题错误
+function showTitleError(message) {
+  elements.titleError.textContent = message;
+  elements.titleError.classList.add('visible');
+  elements.noteTitleInput.classList.add('error');
+  elements.saveNoteBtn.disabled = true;
+}
+
+// 清除标题错误
+function clearTitleError() {
+  elements.titleError.textContent = '';
+  elements.titleError.classList.remove('visible');
+  elements.noteTitleInput.classList.remove('error');
+  elements.saveNoteBtn.disabled = false;
 }
 
 document.addEventListener('DOMContentLoaded', init);
