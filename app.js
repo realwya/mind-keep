@@ -87,7 +87,6 @@ const editModal = {
   filename: document.querySelector('.edit-modal-filename'),
   charCount: document.querySelector('.char-count'),
   closeBtn: document.querySelector('.edit-modal-close'),
-  cancelBtn: document.querySelector('.btn-cancel-edit'),
   saveBtn: document.querySelector('.btn-save-edit'),
   backdrop: document.querySelector('.edit-modal-backdrop')
 };
@@ -99,7 +98,6 @@ const pendingUrls = new Set();
 
 // 编辑相关状态
 let currentEditingItem = null;
-let isEditDirty = false;
 
 // ===== 初始化 =====
 async function init() {
@@ -520,36 +518,41 @@ async function handleCardClick(e) {
 // 打开编辑弹窗
 function openEditModal(item) {
   currentEditingItem = item;
-  isEditDirty = false;
 
   editModal.textarea.value = item.content;
   editModal.filename.textContent = item.fileName;
   updateCharCount(item.content);
 
+  // 重置保存按钮状态
+  editModal.saveBtn.disabled = false;
+  editModal.saveBtn.textContent = '保存';
+
   editModal.modal.classList.remove('hidden');
   editModal.textarea.focus();
 }
 
-// 关闭编辑弹窗
-function closeEditModal(force = false) {
-  if (isEditDirty && !force) {
-    if (!confirm('您有未保存的修改，确定要关闭吗？')) return;
+// 关闭编辑弹窗（自动保存）
+async function closeEditModal() {
+  if (!currentEditingItem) {
+    editModal.modal.classList.add('hidden');
+    return;
   }
 
-  editModal.modal.classList.add('hidden');
-  currentEditingItem = null;
-  isEditDirty = false;
-  editModal.textarea.value = '';
+  // 自动保存
+  const saved = await saveEditedNote();
+  if (saved) {
+    editModal.modal.classList.add('hidden');
+  }
 }
 
 // 保存编辑
 async function saveEditedNote() {
-  if (!currentEditingItem) return;
+  if (!currentEditingItem) return false;
 
   const newContent = editModal.textarea.value.trim();
   if (!newContent) {
     alert('内容不能为空');
-    return;
+    return false;
   }
 
   editModal.saveBtn.disabled = true;
@@ -582,19 +585,23 @@ async function saveEditedNote() {
       if (contentEl) contentEl.innerHTML = marked.parse(body);
     }
 
-    closeEditModal(true);
+    // 重置状态
+    currentEditingItem = null;
+    editModal.textarea.value = '';
+
+    return true;
 
   } catch (e) {
     console.error('Save failed:', e);
     alert('保存失败: ' + e.message);
     editModal.saveBtn.disabled = false;
     editModal.saveBtn.textContent = '保存';
+    return false;
   }
 }
 
 // 输入监听
 function handleEditInput() {
-  isEditDirty = true;
   updateCharCount(editModal.textarea.value);
 }
 
@@ -606,8 +613,12 @@ function updateCharCount(content) {
 // 绑定编辑弹窗事件
 function bindEditModalEvents() {
   editModal.closeBtn.addEventListener('click', () => closeEditModal());
-  editModal.cancelBtn.addEventListener('click', () => closeEditModal());
-  editModal.saveBtn.addEventListener('click', saveEditedNote);
+  editModal.saveBtn.addEventListener('click', async () => {
+    const saved = await saveEditedNote();
+    if (saved) {
+      editModal.modal.classList.add('hidden');
+    }
+  });
   editModal.backdrop.addEventListener('click', () => closeEditModal());
   editModal.textarea.addEventListener('input', handleEditInput);
 
