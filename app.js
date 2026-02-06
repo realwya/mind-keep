@@ -381,9 +381,9 @@ async function addLinkItem(url) {
   try {
     const metadata = await fetchLinkMetadata(url);
 
-    // 使用时间戳作为链接文件的文件名
-    const timestamp = generateTimestampTitle();
-    const filename = `${timestamp}.md`;
+    // 使用链接标题作为文件名（清理不适合文件名的字符）
+    const rawTitle = metadata.title || extractDomain(url);
+    const filename = `${sanitizeFilename(rawTitle)}.md`;
 
     const frontMatterData = {
       type: 'link',
@@ -400,7 +400,7 @@ async function addLinkItem(url) {
 
     // Update Memory - 使用文件名（不含扩展名）作为 id
     const newItem = {
-      id: timestamp,
+      id: filename.replace('.md', ''),
       content: markdownContent,
       createdAt: Date.now(),
       fileName: filename
@@ -792,6 +792,29 @@ function extractDomain(url) {
 
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
+
+// 清理文件名中的非法字符
+function sanitizeFilename(name) {
+  // 移除或替换不适合文件系统的字符
+  // Windows 不允许: < > : " / \ | ? *
+  // 同时移除控制字符和前后空格
+  let cleaned = name
+    .replace(/[<>:"/\\|?*\x00-\x1f]/g, '') // 移除非法字符
+    .replace(/\s+/g, ' ')  // 多个空格合并为一个
+    .trim();               // 移除前后空格
+
+  // 如果清理后为空，使用时间戳
+  if (!cleaned) {
+    cleaned = generateTimestampTitle();
+  }
+
+  // 限制长度（大多数文件系统限制255字符）
+  if (cleaned.length > 200) {
+    cleaned = cleaned.slice(0, 200);
+  }
+
+  return cleaned;
 }
 
 // 生成时间戳标题（当标题为空时使用）
