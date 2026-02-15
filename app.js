@@ -134,6 +134,35 @@ let currentEditingItem = null;
 let editTagsInput = null;
 let linkEditTagsInput = null;
 
+function isTextEditingTarget(target) {
+  if (!(target instanceof Element)) return false;
+
+  const editingSelector = 'input, textarea, select, [contenteditable="true"], .tags-input-field, .tags-input-container';
+  if (target.closest(editingSelector)) return true;
+
+  const editableAncestor = target.closest('[contenteditable]');
+  if (!editableAncestor) return false;
+
+  const contentEditableValue = editableAncestor.getAttribute('contenteditable');
+  return contentEditableValue !== 'false';
+}
+
+function isMetaOrCtrlEnter(e) {
+  return e.key === 'Enter' && (e.metaKey || e.ctrlKey);
+}
+
+function isNoteFormOpen() {
+  return !elements.noteForm.classList.contains('hidden');
+}
+
+function isNoteEditOpen() {
+  return !editModal.modal.classList.contains('hidden');
+}
+
+function isLinkEditOpen() {
+  return !linkEditModal.modal.classList.contains('hidden');
+}
+
 // ===== TagsInput 组件 =====
 class TagsInput {
   constructor(container, options = {}) {
@@ -706,10 +735,73 @@ function bindEvents() {
   elements.clearAllFiltersBtn.addEventListener('click', clearAllTagFilters);
 
   // 键盘快捷键
-  document.addEventListener('keydown', (e) => {
+  document.addEventListener('keydown', async (e) => {
     // ESC 关闭侧边栏
     if (e.key === 'Escape' && elements.sidebar.classList.contains('open')) {
       closeSidebar();
+      return;
+    }
+
+    // ESC 关闭主输入框（焦点在输入区域内时）
+    if (
+      e.key === 'Escape' &&
+      isNoteFormOpen() &&
+      !isNoteEditOpen() &&
+      !isLinkEditOpen() &&
+      elements.noteForm.contains(document.activeElement)
+    ) {
+      e.preventDefault();
+      collapseForm();
+      return;
+    }
+
+    // n: 快速聚焦主输入框（仅非输入态，且无编辑弹窗）
+    if (
+      e.key.toLowerCase() === 'n' &&
+      !e.metaKey &&
+      !e.ctrlKey &&
+      !e.altKey &&
+      !isTextEditingTarget(e.target) &&
+      !isNoteEditOpen() &&
+      !isLinkEditOpen()
+    ) {
+      e.preventDefault();
+      if (!isNoteFormOpen()) {
+        expandNoteForm();
+      }
+      elements.noteContentInput.focus();
+      return;
+    }
+
+    // Cmd/Ctrl + Enter: 统一保存
+    if (isMetaOrCtrlEnter(e)) {
+      // 1) 笔记编辑弹窗
+      if (isNoteEditOpen()) {
+        e.preventDefault();
+        if (editModal.saveBtn.disabled) return;
+        const saved = await saveEditedNote();
+        if (saved) {
+          editModal.modal.classList.add('hidden');
+        }
+        return;
+      }
+
+      // 2) 链接编辑弹窗
+      if (isLinkEditOpen()) {
+        e.preventDefault();
+        if (linkEditModal.saveBtn.disabled) return;
+        const saved = await saveLinkEdit();
+        if (saved) {
+          linkEditModal.modal.classList.add('hidden');
+        }
+        return;
+      }
+
+      // 3) 主输入框
+      if (isNoteFormOpen()) {
+        e.preventDefault();
+        elements.noteForm.requestSubmit();
+      }
     }
   });
 }
