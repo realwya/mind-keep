@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git config:*)",
+      "Bash(env:*)",
+      "Bash(curl:*)",
+      "Bash(git fetch:*)",
+      "Bash(networksetup:*)",
+      "Bash(git ls-remote:*)",
+      "Bash(nc:*)",
+      "Bash(git pull:*)"
+    ]
+  }
+}
