@@ -97,6 +97,7 @@ const elements = {
 // ===== 编辑弹窗 DOM =====
 const editModal = {
   modal: document.getElementById('editModal'),
+  editorContainer: document.getElementById('editContentEditor'),
   textarea: document.getElementById('editContentTextarea'),
   titleInput: document.getElementById('editTitleInput'),
   titleError: document.getElementById('editTitleError'),
@@ -129,6 +130,8 @@ let allTags = [];              // 存储唯一标签及其计数: [{ name: 'tech
 
 // 编辑相关状态
 let currentEditingItem = null;
+let noteEditorView = null;
+let noteEditorLoader = null;
 
 // TagsInput 组件实例
 let editTagsInput = null;
@@ -903,7 +906,18 @@ async function loadItems(view = currentView) {
       for await (const entry of targetHandle.values()) {
         if (entry.kind === 'file' && entry.name.endsWith('.md')) {
           const file = await entry.getFile();
-          const text = await file.text();
+          let text = await file.text();
+
+          if (view === VIEW_ACTIVE) {
+            const normalized = normalizeItemTypeInContent(text);
+            if (normalized !== text) {
+              const writable = await entry.createWritable();
+              await writable.write(normalized);
+              await writable.close();
+              text = normalized;
+            }
+          }
+
           const stat = file.lastModified;
 
           items.push({
@@ -1038,6 +1052,7 @@ async function handleNoteSubmit(e) {
 
   // 单行链接检查
   if (isValidUrl(content)) {
+    elements.noteContentInput.value = '';
     collapseForm(); // 提前关闭表单
     await addLinkItem(content, []);
   } else {
@@ -1055,11 +1070,12 @@ async function addItem(title, content, tags = []) {
   const finalTitle = title || generateTimestampTitle();
   const filename = `${finalTitle}.md`;
 
-  // 如果有 tags，使用 front matter
-  let finalContent = content;
+  // 笔记始终使用 front matter，并带 type: note
+  const frontMatterData = { type: 'note' };
   if (tags.length > 0) {
-    finalContent = createMarkdownWithFrontMatter({ tags: tags.join(',') }, content);
+    frontMatterData.tags = tags.join(',');
   }
+  const finalContent = createMarkdownWithFrontMatter(frontMatterData, content);
 
   try {
     // 写入文件系统
@@ -1088,7 +1104,7 @@ async function addItem(title, content, tags = []) {
 async function addLinkItem(url, tags = []) {
   if (items.some(item => {
     const { data } = parseFrontMatter(item.content);
-    return data.type === 'link' && data.url === url;
+    return isLinkItemType(data.type) && data.url === url;
   })) {
     alert('This link already exists.');
     return;
@@ -1120,7 +1136,7 @@ async function addLinkItem(url, tags = []) {
     const filename = `${sanitizedTitle}.md`;
 
     const frontMatterData = {
-      type: 'link',
+      type: getLinkTypeFromUrl(url),
       title: metadata.title || extractDomain(url),
       url: url,
       description: (metadata.description || '').replace(/\n/g, ' '),
@@ -1273,7 +1289,7 @@ function openEditModal(item) {
   // 解析现有内容
   const { data, content } = parseFrontMatter(item.content);
 
-  if (data.type === 'link') {
+  if (isLinkItemType(data.type)) {
     // 打开链接编辑弹窗
     openLinkEditModal(item, data);
   } else {
@@ -1282,13 +1298,152 @@ function openEditModal(item) {
   }
 }
 
+function getEditContent() {
+  if (noteEditorView) {
+    return noteEditorView.state.doc.toString();
+  }
+  return editModal.textarea.value;
+}
+
+function setEditContent(content) {
+  const next = content || '';
+
+  if (noteEditorView) {
+    noteEditorView.dispatch({
+      changes: { from: 0, to: noteEditorView.state.doc.length, insert: next }
+    });
+  }
+
+  // 保持 textarea 与编辑器内容一致，作为降级兜底
+  editModal.textarea.value = next;
+}
+
+function focusEditContent() {
+  if (noteEditorView) {
+    noteEditorView.focus();
+    return;
+  }
+  editModal.textarea.focus();
+}
+
+function createHeadingExtension(StateField, Decoration, EditorView) {
+  function buildDecorations(state) {
+    const decorations = [];
+
+    for (let i = 1; i <= state.doc.lines; i += 1) {
+      const line = state.doc.line(i);
+      const match = line.text.match(/^(#{1,6})\s/);
+      if (!match) continue;
+
+      const level = match[1].length;
+      if (level === 1) {
+        decorations.push(Decoration.line({ attributes: { class: 'cm-heading-1' } }).range(line.from));
+      } else if (level === 2) {
+        decorations.push(Decoration.line({ attributes: { class: 'cm-heading-2' } }).range(line.from));
+      }
+    }
+
+    return Decoration.set(decorations);
+  }
+
+  return StateField.define({
+    create(state) {
+      return buildDecorations(state);
+    },
+    update(_, tr) {
+      if (!tr.docChanged) return buildDecorations(tr.state);
+      return buildDecorations(tr.state);
+    },
+    provide: (field) => EditorView.decorations.from(field)
+  });
+}
+
+async function ensureNoteEditor() {
+  if (noteEditorView) return true;
+  if (noteEditorLoader) return noteEditorLoader;
+
+  noteEditorLoader = (async () => {
+    try {
+      const [
+        { EditorState, StateField },
+        { EditorView, Decoration },
+        { markdown, markdownLanguage },
+        { HighlightStyle, syntaxHighlighting },
+        { tags }
+      ] = await Promise.all([
+        import('https://esm.sh/@codemirror/state@6.5.4'),
+        import('https://esm.sh/@codemirror/view@6.39.14'),
+        import('https://esm.sh/@codemirror/lang-markdown@6.3.3'),
+        import('https://esm.sh/@codemirror/language@6.12.1'),
+        import('https://esm.sh/@lezer/highlight@1.2.3')
+      ]);
+
+      const headingExtension = createHeadingExtension(StateField, Decoration, EditorView);
+      const syntaxHighlighter = HighlightStyle.define([
+        { tag: tags.heading, fontWeight: '700' },
+        { tag: tags.strong, fontWeight: '700' },
+        { tag: tags.emphasis, fontStyle: 'italic' },
+        { tag: tags.strikethrough, textDecoration: 'line-through' },
+        { tag: tags.link, color: '#1a73e8' },
+        { tag: tags.monospace, fontFamily: 'Roboto Mono, Consolas, monospace' }
+      ]);
+
+      noteEditorView = new EditorView({
+        state: EditorState.create({
+          doc: editModal.textarea.value || '',
+          extensions: [
+            markdown({ base: markdownLanguage }),
+            syntaxHighlighting(syntaxHighlighter),
+            headingExtension,
+            EditorView.lineWrapping,
+            EditorView.updateListener.of((update) => {
+              if (update.docChanged) {
+                updateCharCount(update.state.doc.toString());
+                editModal.textarea.value = update.state.doc.toString();
+              }
+            }),
+            EditorView.theme({
+              '&': {
+                height: '100%'
+              },
+              '.cm-scroller': {
+                overflow: 'auto'
+              },
+              '.cm-gutters': {
+                display: 'none'
+              },
+              '&.cm-focused': {
+                outline: 'none'
+              }
+            })
+          ]
+        }),
+        parent: editModal.editorContainer
+      });
+
+      editModal.editorContainer.classList.remove('hidden');
+      editModal.textarea.classList.add('hidden');
+      return true;
+    } catch (error) {
+      console.warn('CodeMirror load failed, fallback to textarea:', error);
+      editModal.editorContainer.classList.add('hidden');
+      editModal.textarea.classList.remove('hidden');
+      return false;
+    } finally {
+      noteEditorLoader = null;
+    }
+  })();
+
+  return noteEditorLoader;
+}
+
 // 打开笔记编辑弹窗
-function openNoteEditModal(item, data, content) {
+async function openNoteEditModal(item, data, content) {
   // 填充标题（使用 item.id，即文件名）
   editModal.titleInput.value = item.id;
 
   // 填充内容（不包含 front matter）
-  editModal.textarea.value = content;
+  setEditContent(content);
   updateCharCount(content);
 
   // 填充 tags
@@ -1301,7 +1456,9 @@ function openNoteEditModal(item, data, content) {
   clearEditTitleError();
 
   editModal.modal.classList.remove('hidden');
-  editModal.textarea.focus(); // 保持现有行为：聚焦到内容输入框
+  await ensureNoteEditor();
+  setEditContent(content);
+  focusEditContent();
 }
 
 // 打开链接编辑弹窗
@@ -1339,7 +1496,7 @@ async function closeEditModal() {
 async function saveEditedNote() {
   if (!currentEditingItem) return false;
 
-  const newContent = editModal.textarea.value.trim();
+  const newContent = getEditContent().trim();
   if (!newContent) {
     alert('Content cannot be empty.');
     return false;
@@ -1376,17 +1533,17 @@ async function saveEditedNote() {
 
     // 构建新内容（tags + content）
     const { data: originalData } = parseFrontMatter(currentEditingItem.content);
-    const frontMatterData = { ...originalData };
+    const frontMatterData = { ...originalData, type: 'note' };
+    delete frontMatterData.url;
+    delete frontMatterData.image;
+    delete frontMatterData.description;
     if (tags.length > 0) {
       frontMatterData.tags = tags.join(',');
     } else {
       delete frontMatterData.tags;
     }
 
-    let finalContent = newContent;
-    if (Object.keys(frontMatterData).length > 0) {
-      finalContent = createMarkdownWithFrontMatter(frontMatterData, newContent);
-    }
+    const finalContent = createMarkdownWithFrontMatter(frontMatterData, newContent);
 
     // 保存内容到文件（使用新文件名）
     await saveFile(newFilename, finalContent);
@@ -1426,7 +1583,7 @@ async function saveEditedNote() {
 
     // 重置状态
     currentEditingItem = null;
-    editModal.textarea.value = '';
+    setEditContent('');
     editModal.titleInput.value = '';
     editTagsInput.clear();
     clearEditTitleError();
@@ -1445,7 +1602,7 @@ async function saveEditedNote() {
 
 // 输入监听
 function handleEditInput() {
-  updateCharCount(editModal.textarea.value);
+  updateCharCount(getEditContent());
 }
 
 // 更新字符计数
@@ -1517,7 +1674,7 @@ async function saveLinkEdit() {
 
   // 获取表单数据
   const formData = {
-    type: 'link',
+    type: getLinkTypeFromUrl(linkEditModal.form.url.value.trim()),
     title: linkEditModal.form.title.value.trim(),
     url: linkEditModal.form.url.value.trim(),
     description: linkEditModal.form.description.value.trim(),
@@ -1551,28 +1708,12 @@ async function saveLinkEdit() {
       items[index].createdAt = Date.now();
     }
 
-    // 3. 更新 UI（局部更新卡片）
+    // 3. 更新 UI（整卡替换，保证类型切换时样式正确）
     const card = document.querySelector(`.card[data-id="${currentEditingItem.id}"]`);
     if (card) {
-      const titleEl = card.querySelector('.card-title');
-      const descEl = card.querySelector('.card-description');
-      const urlEl = card.querySelector('.url-text');
-      const imgEl = card.querySelector('.card-image img');
-      const openLinkBtn = card.querySelector('.open-link-button');
-      const tagsEl = card.querySelector('.card-tags');
-
-      if (titleEl) titleEl.textContent = formData.title;
-      if (descEl) descEl.textContent = formData.description;
-      if (urlEl) urlEl.textContent = extractDomain(formData.url);
-      if (openLinkBtn) openLinkBtn.href = formData.url;
-      if (imgEl) {
-        if (formData.image) {
-          imgEl.src = formData.image;
-          imgEl.classList.remove('error');
-        } else {
-          imgEl.classList.add('error');
-        }
-      }
+      const nextCard = createLinkCard({ ...formData, id: currentEditingItem.id });
+      card.replaceWith(nextCard);
+      const tagsEl = nextCard.querySelector('.card-tags');
       if (tagsEl) renderTags(tagsEl, tags);
     }
 
@@ -1608,7 +1749,7 @@ function renderOneItem(item, prepend) {
   const { data, content } = parseFrontMatter(item.content);
   let card;
 
-  if (data.type === 'link') {
+  if (isLinkItemType(data.type)) {
     card = createLinkCard({ ...data, id: item.id });
   } else {
     // 使用 id（文件名）作为标题，正文保留完整 markdown 内容
@@ -1685,18 +1826,53 @@ function createLinkCard(data) {
     openLinkBtn.href = data.url;
   }
 
+  const imageWrap = card.querySelector('.card-image');
   const img = card.querySelector('.card-image img');
-  if (data.image) {
-    img.src = data.image;
-    img.alt = data.title;
-    img.onerror = () => img.classList.add('error');
+  const titleEl = card.querySelector('.card-title');
+  const descriptionEl = card.querySelector('.card-description');
+  const bodyEl = card.querySelector('.card-body');
+  const urlTextEl = card.querySelector('.url-text');
+
+  const xPostId = extractXPostId(data.url);
+  if (xPostId) {
+    card.classList.add('x-post-card');
+    if (imageWrap) imageWrap.classList.add('hidden');
+    if (titleEl) titleEl.classList.add('hidden');
+    if (descriptionEl) descriptionEl.classList.add('hidden');
+
+    const embedWrap = document.createElement('div');
+    embedWrap.className = 'x-post-embed';
+
+    const embedFrame = document.createElement('iframe');
+    embedFrame.src = `https://platform.twitter.com/embed/Tweet.html?id=${xPostId}&dnt=true`;
+    embedFrame.loading = 'lazy';
+    embedFrame.referrerPolicy = 'no-referrer-when-downgrade';
+    embedFrame.title = 'Embedded X post';
+    embedFrame.setAttribute('frameborder', '0');
+
+    embedWrap.appendChild(embedFrame);
+    bodyEl.prepend(embedWrap);
   } else {
-    img.classList.add('error');
+    const directImageUrl = extractDirectImageUrl(data.url);
+    const displayImageUrl = directImageUrl || data.image;
+
+    if (directImageUrl) {
+      card.classList.add('image-link-card');
+    }
+
+    if (displayImageUrl) {
+      img.src = displayImageUrl;
+      img.alt = data.title;
+      img.onerror = () => img.classList.add('error');
+    } else {
+      img.classList.add('error');
+    }
+
+    titleEl.textContent = data.title;
+    descriptionEl.textContent = data.description;
   }
 
-  card.querySelector('.card-title').textContent = data.title;
-  card.querySelector('.card-description').textContent = data.description;
-  card.querySelector('.url-text').textContent = extractDomain(data.url);
+  urlTextEl.textContent = extractDomain(data.url);
 
   // 渲染 tags
   const tags = data.tags ? data.tags.split(',').map(t => t.trim()) : [];
@@ -1795,6 +1971,68 @@ function isValidUrl(string) {
     const url = new URL(string);
     return url.protocol === 'http:' || url.protocol === 'https:';
   } catch { return false; }
+}
+
+function extractXPostId(rawUrl) {
+  try {
+    const url = new URL(rawUrl);
+    const host = url.hostname.toLowerCase().replace(/^www\./, '');
+    const isXDomain = host === 'x.com' || host === 'twitter.com' || host === 'mobile.twitter.com';
+    if (!isXDomain) return null;
+
+    const match = url.pathname.match(/\/status\/(\d+)/i);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+}
+
+function extractDirectImageUrl(rawUrl) {
+  try {
+    const url = new URL(rawUrl);
+    const pathname = url.pathname.toLowerCase();
+    const extMatch = pathname.match(/\.([a-z0-9]+)$/);
+    const ext = extMatch ? extMatch[1] : '';
+    const format = (url.searchParams.get('format') || '').toLowerCase();
+    const imageExtSet = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'bmp', 'svg']);
+
+    if (imageExtSet.has(ext) || imageExtSet.has(format)) {
+      return url.toString();
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function getLinkTypeFromUrl(url) {
+  return extractDirectImageUrl(url) ? 'image' : 'link';
+}
+
+function isLinkItemType(type) {
+  return type === 'link' || type === 'image';
+}
+
+function normalizeItemTypeInContent(text) {
+  const match = text.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+  const hasFrontMatter = Boolean(match);
+  const { data } = parseFrontMatter(text);
+  const body = hasFrontMatter ? match[2] : text;
+
+  const nextData = { ...data };
+  if (nextData.url) {
+    nextData.type = getLinkTypeFromUrl(nextData.url);
+  } else {
+    nextData.type = 'note';
+  }
+
+  if (hasFrontMatter) {
+    if (nextData.type === data.type) return text;
+    return createMarkdownWithFrontMatter(nextData, body);
+  }
+
+  return createMarkdownWithFrontMatter(nextData, body);
 }
 
 function extractDomain(url) {
