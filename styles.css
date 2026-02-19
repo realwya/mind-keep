@@ -871,6 +871,21 @@ body {
   margin-bottom: 0.125rem;
 }
 
+/* Task list - remove bullet points from checkbox items */
+.note-content ul:has(li input[type="checkbox"]) {
+  padding-left: 0;
+}
+
+.note-content li:has(input[type="checkbox"]) {
+  list-style: none;
+  padding-left: 0;
+}
+
+.note-content li:has(input[type="checkbox"]) input[type="checkbox"] {
+  margin-right: 0.5rem;
+  vertical-align: middle;
+}
+
 .note-content blockquote {
   margin: 0.5rem 0;
   padding-left: 0.75rem;
