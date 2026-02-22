@@ -85,7 +85,7 @@ Note content here...
 
 ### Core Components
 
-1. **IndexedDB Wrapper** ([`app.js:12-48`](app.js#L12-L48))
+1. **IndexedDB Wrapper** ([`app.js:19-55`](app.js#L19-L55))
    - Persists directory handles across sessions
    - Database: `keep-db`, Store: `handles`
    - Handles browser security requiring re-confirmation on reload
