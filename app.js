@@ -668,9 +668,9 @@ function handleSearchInput(e) {
 
 function handleSearchKeydown(e) {
   if (e.key !== 'Escape') return;
-  if (!elements.searchInput.value) return;
   e.preventDefault();
-  clearSearchQuery();
+  e.stopPropagation();
+  elements.searchInput.blur();
 }
 
 function clearSearchQuery() {
@@ -1872,31 +1872,41 @@ async function saveEditedNote() {
   // 获取 tags
   const tags = editTagsInput.getTags();
 
+  const oldFilename = currentEditingItem.fileName;
+  const newFilename = `${sanitizedTitle}.md`;
+  const { data: originalData } = parseFrontMatter(currentEditingItem.content);
+  const frontMatterData = { ...originalData, type: 'note' };
+  delete frontMatterData.url;
+  delete frontMatterData.image;
+  delete frontMatterData.description;
+  if (tags.length > 0) {
+    frontMatterData.tags = tags.join(',');
+  } else {
+    delete frontMatterData.tags;
+  }
+
+  const finalContent = createMarkdownWithFrontMatter(frontMatterData, newContent);
+  const hasFilenameChange = newFilename !== oldFilename;
+  const hasContentChange = finalContent !== currentEditingItem.content;
+
+  // 无改动时直接视为保存成功，不写文件、不更新时间
+  if (!hasFilenameChange && !hasContentChange) {
+    currentEditingItem = null;
+    setEditContent('');
+    editModal.titleInput.value = '';
+    editTagsInput.clear();
+    clearEditTitleError();
+    return true;
+  }
+
   editModal.saveBtn.disabled = true;
   editModal.saveBtn.textContent = 'Saving...';
 
   try {
-    const oldFilename = currentEditingItem.fileName;
-    const newFilename = `${sanitizedTitle}.md`;
-
     // 如果标题改变，执行文件重命名
-    if (newFilename !== oldFilename) {
+    if (hasFilenameChange) {
       await renameFile(oldFilename, newFilename);
     }
-
-    // 构建新内容（tags + content）
-    const { data: originalData } = parseFrontMatter(currentEditingItem.content);
-    const frontMatterData = { ...originalData, type: 'note' };
-    delete frontMatterData.url;
-    delete frontMatterData.image;
-    delete frontMatterData.description;
-    if (tags.length > 0) {
-      frontMatterData.tags = tags.join(',');
-    } else {
-      delete frontMatterData.tags;
-    }
-
-    const finalContent = createMarkdownWithFrontMatter(frontMatterData, newContent);
 
     // 保存内容到文件（使用新文件名）
     await saveFile(newFilename, finalContent);
@@ -2062,6 +2072,14 @@ async function saveLinkEdit() {
 
   // 生成 front matter 内容
   const content = createMarkdownWithFrontMatter(formData);
+
+  // 无改动时直接视为保存成功，不写文件、不更新时间
+  if (content === currentEditingItem.content) {
+    currentEditingItem = null;
+    linkEditModal.form.reset();
+    linkEditTagsInput.clear();
+    return true;
+  }
 
   linkEditModal.saveBtn.disabled = true;
   linkEditModal.saveBtn.textContent = 'Saving...';
