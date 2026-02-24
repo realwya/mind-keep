@@ -32,6 +32,7 @@
 
   /* 侧边栏变量 */
   --sidebar-width: 280px;
+  --sidebar-collapsed-width: 56px;
   --tag-selected-bg: #1a73e8;
   --tag-selected-text: #ffffff;
   --tag-count-bg: #f1f3f4;
@@ -103,7 +104,7 @@ body {
   position: sticky;
   top: 0;
   overflow: hidden;
-  transition: transform 0.2s ease;
+  transition: width var(--transition-normal), transform var(--transition-normal);
   box-shadow: var(--shadow-sm);
 }
 
@@ -524,6 +525,34 @@ body {
 .sidebar-close svg {
   width: 20px;
   height: 20px;
+}
+
+@media (min-width: 1101px) {
+  .sidebar-close {
+    display: flex;
+  }
+
+  .sidebar.collapsed {
+    width: var(--sidebar-collapsed-width);
+  }
+
+  .sidebar.collapsed .sidebar-header {
+    justify-content: center;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    border-bottom: none;
+  }
+
+  .sidebar.collapsed .sidebar-actions {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .sidebar.collapsed .sidebar-branding,
+  .sidebar.collapsed .sidebar-content,
+  .sidebar.collapsed .sidebar-footer {
+    display: none;
+  }
 }
 
 /* ===== 遮罩层（移动端） ===== */
