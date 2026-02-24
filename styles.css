@@ -69,12 +69,16 @@ body {
   color: var(--text-primary);
   line-height: 1.5;
   min-height: 100vh;
+  display: flex;
+  gap: 1rem;
 }
 
 /* ===== 应用容器 ===== */
 .app {
-  margin: 0 auto;
+  flex: 1;
+  margin: 0;
   padding: 1rem;
+  min-width: 0;
 }
 
 /* ===== 布局容器 ===== */
@@ -93,12 +97,11 @@ body {
 .sidebar {
   width: var(--sidebar-width);
   background: var(--bg-card);
-  border-radius: var(--radius-md);
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 120px); /* app padding (1rem*2) + header area + bottom margin */
+  height: 100vh;
   position: sticky;
-  top: 1rem;
+  top: 0;
   overflow: hidden;
   transition: transform 0.2s ease;
   box-shadow: var(--shadow-sm);
@@ -897,7 +900,8 @@ body {
 }
 
 .x-post-skeleton {
-  width: calc(100% - 2rem); /* offset for margin: 1rem on each side */
+  width: calc(100% - 2rem);
+  /* offset for margin: 1rem on each side */
   height: 18rem;
   margin: 1rem;
 }
@@ -909,7 +913,8 @@ body {
 
 .image-link-card .card-image img {
   height: auto;
-  max-height: 420px; /* prevent oversized images from dominating the grid */
+  max-height: 420px;
+  /* prevent oversized images from dominating the grid */
   object-fit: contain;
   background: var(--bg-secondary);
 }
@@ -1187,7 +1192,8 @@ body {
   }
 
   .image-link-card .card-image img {
-    max-height: 320px; /* 移动端限制图片高度 */
+    max-height: 320px;
+    /* 移动端限制图片高度 */
   }
 
   .x-post-skeleton {

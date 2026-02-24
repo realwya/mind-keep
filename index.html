@@ -14,6 +14,76 @@
 </head>
 
 <body>
+  <!-- 标签筛选侧边栏 -->
+  <aside id="tagSidebar" class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-branding">
+        <i data-feather="book-open" class="brand-icon" aria-hidden="true"></i>
+        <h1 class="brand-title">Keep</h1>
+      </div>
+      <div class="sidebar-actions">
+        <button id="closeSidebarBtn" class="icon-button sidebar-close" aria-label="Close sidebar">
+          <i data-feather="x" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="sidebar-content">
+      <div class="sidebar-search">
+        <label class="search-label" for="searchInput">Search</label>
+        <div class="search-input-wrap">
+          <input id="searchInput" class="search-input" type="search" placeholder="Search notes and links..." autocomplete="off">
+          <button id="clearSearchBtn" class="search-clear-btn hidden" type="button" aria-label="Clear search">
+            <i data-feather="x" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="view-switch">
+        <button id="viewNotesBtn" class="view-switch-btn active" type="button" aria-label="Show notes view">Notes</button>
+        <button id="viewTrashBtn" class="view-switch-btn" type="button" aria-label="Show trash view">Trash</button>
+      </div>
+
+      <!-- 已选筛选显示区域 -->
+      <div id="activeFilters" class="active-filters hidden">
+        <div class="active-filters-header">
+          <span class="active-filters-label">Selected Filters</span>
+          <button id="clearAllFilters" class="text-button clear-filters-btn" type="button" aria-label="Clear all filters">Clear all</button>
+        </div>
+        <div id="activeFiltersList" class="active-filters-list"></div>
+      </div>
+
+      <div id="typeFiltersCard" class="filter-card hidden">
+        <div class="filter-card-header">
+          <span class="filter-card-label">Type</span>
+        </div>
+        <div id="typeFiltersList" class="filter-list"></div>
+      </div>
+
+      <!-- 标签筛选区域 -->
+      <div id="tagsSection" class="tags-section hidden">
+        <div class="tags-section-header">
+          <span class="tags-section-label">Tags</span>
+        </div>
+        <div id="tagsList" class="filter-list tags-list">
+        </div>
+      </div>
+
+      <!-- 空状态 -->
+      <div id="noTagsState" class="no-tags-state">
+        <p>No filters available</p>
+        <span class="text-muted">Types and tags will appear after you add notes or links</span>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <button id="changeFolderBtn" class="folder-button" title="Change folder" aria-label="Change folder">
+        <i data-feather="folder" aria-hidden="true"></i>
+        <span id="folderName">No folder selected</span>
+      </button>
+    </div>
+  </aside>
+
   <div class="app">
     <!-- 侧边栏切换按钮（移动端显示） -->
     <button id="sidebarToggleBtn" class="sidebar-toggle" aria-label="Toggle sidebar">
@@ -22,77 +92,6 @@
 
     <!-- 布局容器 -->
     <div class="app-layout">
-      <!-- 标签筛选侧边栏 -->
-      <aside id="tagSidebar" class="sidebar">
-        <div class="sidebar-header">
-          <div class="sidebar-branding">
-            <i data-feather="book-open" class="brand-icon" aria-hidden="true"></i>
-            <h1 class="brand-title">Keep</h1>
-          </div>
-          <div class="sidebar-actions">
-            <button id="closeSidebarBtn" class="icon-button sidebar-close" aria-label="Close sidebar">
-              <i data-feather="x" aria-hidden="true"></i>
-            </button>
-          </div>
-        </div>
-
-        <div class="sidebar-content">
-          <div class="sidebar-search">
-            <label class="search-label" for="searchInput">Search</label>
-            <div class="search-input-wrap">
-              <input id="searchInput" class="search-input" type="search" placeholder="Search notes and links..." autocomplete="off">
-              <button id="clearSearchBtn" class="search-clear-btn hidden" type="button" aria-label="Clear search">
-                <i data-feather="x" aria-hidden="true"></i>
-              </button>
-            </div>
-          </div>
-
-          <div class="view-switch">
-            <button id="viewNotesBtn" class="view-switch-btn active" type="button" aria-label="Show notes view">Notes</button>
-            <button id="viewTrashBtn" class="view-switch-btn" type="button" aria-label="Show trash view">Trash</button>
-          </div>
-
-          <!-- 已选筛选显示区域 -->
-          <div id="activeFilters" class="active-filters hidden">
-            <div class="active-filters-header">
-              <span class="active-filters-label">Selected Filters</span>
-              <button id="clearAllFilters" class="text-button clear-filters-btn" type="button" aria-label="Clear all filters">Clear all</button>
-            </div>
-            <div id="activeFiltersList" class="active-filters-list"></div>
-          </div>
-
-          <div id="typeFiltersCard" class="filter-card hidden">
-            <div class="filter-card-header">
-              <span class="filter-card-label">Type</span>
-            </div>
-            <div id="typeFiltersList" class="filter-list"></div>
-          </div>
-
-          <!-- 标签筛选区域 -->
-          <div id="tagsSection" class="tags-section hidden">
-            <div class="tags-section-header">
-              <span class="tags-section-label">Tags</span>
-            </div>
-            <div id="tagsList" class="filter-list tags-list">
-              <!-- 标签项将通过 JavaScript 动态插入 -->
-            </div>
-          </div>
-
-          <!-- 空状态 -->
-          <div id="noTagsState" class="no-tags-state">
-            <p>No filters available</p>
-            <span class="text-muted">Types and tags will appear after you add notes or links</span>
-          </div>
-        </div>
-
-        <div class="sidebar-footer">
-          <button id="changeFolderBtn" class="folder-button" title="Change folder" aria-label="Change folder">
-            <i data-feather="folder" aria-hidden="true"></i>
-            <span id="folderName">No folder selected</span>
-          </button>
-        </div>
-      </aside>
-
       <!-- 主内容包装器 -->
       <div class="main-wrapper">
         <!-- 文件夹选择引导 -->
