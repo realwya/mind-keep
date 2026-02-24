@@ -338,6 +338,34 @@ function filterAndRenderItems() {
 /**
  * 切换侧边栏（移动端）
  */
+const SIDEBAR_COLLAPSE_BREAKPOINT = 1100;
+
+function isMobileSidebarLayout() {
+  return window.innerWidth <= SIDEBAR_COLLAPSE_BREAKPOINT;
+}
+
+function setSidebarActionButton(iconName, label) {
+  if (!elements.closeSidebarBtn) return;
+  elements.closeSidebarBtn.setAttribute('aria-label', label);
+  elements.closeSidebarBtn.setAttribute('title', label);
+  elements.closeSidebarBtn.innerHTML = `<i data-feather="${iconName}" aria-hidden="true"></i>`;
+  refreshFeatherIcons();
+}
+
+function syncSidebarActionButton() {
+  if (isMobileSidebarLayout()) {
+    setSidebarActionButton('x', 'Close sidebar');
+    return;
+  }
+
+  const isCollapsed = elements.sidebar.classList.contains('collapsed');
+  if (isCollapsed) {
+    setSidebarActionButton('chevrons-right', 'Expand sidebar');
+  } else {
+    setSidebarActionButton('chevrons-left', 'Collapse sidebar');
+  }
+}
+
 function toggleSidebar() {
   elements.sidebar.classList.toggle('open');
 
@@ -377,4 +405,20 @@ function hideSidebarOverlay() {
 function closeSidebar() {
   elements.sidebar.classList.remove('open');
   hideSidebarOverlay();
+}
+
+/**
+ * 侧边栏操作按钮：桌面端收起/展开，移动端关闭
+ */
+function toggleSidebarCollapse() {
+  if (isMobileSidebarLayout()) {
+    closeSidebar();
+    syncSidebarActionButton();
+    return;
+  }
+
+  elements.sidebar.classList.remove('open');
+  hideSidebarOverlay();
+  elements.sidebar.classList.toggle('collapsed');
+  syncSidebarActionButton();
 }

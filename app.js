@@ -84,7 +84,9 @@ function bindEvents() {
 
   // Sidebar toggle
   elements.sidebarToggleBtn.addEventListener('click', toggleSidebar);
-  elements.closeSidebarBtn.addEventListener('click', closeSidebar);
+  elements.closeSidebarBtn.addEventListener('click', toggleSidebarCollapse);
+  window.addEventListener('resize', syncSidebarActionButton);
+  syncSidebarActionButton();
   elements.viewNotesBtn.addEventListener('click', () => switchView(VIEW_ACTIVE));
   elements.viewTrashBtn.addEventListener('click', () => switchView(VIEW_TRASH));
   elements.searchInput.addEventListener('input', handleSearchInput);
