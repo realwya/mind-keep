@@ -90,6 +90,7 @@ const elements = {
   noteCardTemplate: document.getElementById('noteCardTemplate'),
 
   // 侧边栏元素
+  sidebarOverlay: null, // lazily initialized in showSidebarOverlay
   sidebarToggleBtn: document.getElementById('sidebarToggleBtn'),
   sidebar: document.getElementById('tagSidebar'),
   closeSidebarBtn: document.getElementById('closeSidebarBtn'),
@@ -826,23 +827,22 @@ function toggleSidebar() {
  * 显示遮罩层
  */
 function showSidebarOverlay() {
-  let overlay = document.querySelector('.sidebar-overlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
+  if (!elements.sidebarOverlay) {
+    const overlay = document.createElement('div');
     overlay.className = 'sidebar-overlay';
     overlay.addEventListener('click', closeSidebar);
     document.body.appendChild(overlay);
+    elements.sidebarOverlay = overlay;
   }
-  overlay.classList.add('visible');
+  elements.sidebarOverlay.classList.add('visible');
 }
 
 /**
  * 隐藏遮罩层
  */
 function hideSidebarOverlay() {
-  const overlay = document.querySelector('.sidebar-overlay');
-  if (overlay) {
-    overlay.classList.remove('visible');
+  if (elements.sidebarOverlay) {
+    elements.sidebarOverlay.classList.remove('visible');
   }
 }
 
@@ -1416,7 +1416,7 @@ async function addLinkItem(url, tags = []) {
   }
 }
 
-// ===== 删除逻辑 =====
+// ===== 卡片交互处理 =====
 async function handleCardClick(e) {
   // 1. 处理打开链接按钮点击 - 让链接正常打开，不阻止默认行为
   const openLinkBtn = e.target.closest('.open-link-button');
@@ -1596,7 +1596,7 @@ function enhanceTaskCheckboxes(container) {
 function renderNoteMarkdown(contentEl, markdownContent) {
   const parsedHtml = marked.parse(markdownContent);
   const sanitizedHtml = sanitizeRenderedHtml(parsedHtml).replace(/\sdisabled(?:="")?/g, '');
-  contentEl.innerHTML = sanitizedHtml;
+  contentEl.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(sanitizedHtml) : sanitizedHtml;
   enhanceTaskCheckboxes(contentEl);
 }
 
@@ -2094,6 +2094,11 @@ async function saveLinkEdit() {
     image: linkEditModal.form.image.value.trim(),
   };
 
+  if (!formData.url) {
+    showPopup('Link cannot be empty.', 'error');
+    return false;
+  }
+
   const tags = linkEditTagsInput.getTags();
   if (tags.length > 0) {
     formData.tags = tags.join(',');
@@ -2422,47 +2427,53 @@ function updateEmptyState() {
 
 // API Utils
 async function fetchLinkMetadata(url) {
-  const apiUrl = `${API_URL}?url=${encodeURIComponent(url)}&screenshot=true`;
-  const response = await fetch(apiUrl);
-  if (!response.ok) throw new Error('API request failed');
-  const data = await response.json();
-  if (data.status !== 'success') throw new Error('Failed to fetch');
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  try {
+    const apiUrl = `${API_URL}?url=${encodeURIComponent(url)}&screenshot=true`;
+    const response = await fetch(apiUrl, { signal: controller.signal });
+    if (!response.ok) throw new Error('API request failed');
+    const data = await response.json();
+    if (data.status !== 'success') throw new Error('Failed to fetch');
 
-  const imgData = data.data.image || {};
-  const screenData = data.data.screenshot || {};
-  const logoData = data.data.logo || {};
+    const imgData = data.data.image || {};
+    const screenData = data.data.screenshot || {};
+    const logoData = data.data.logo || {};
 
-  // Choose best image
-  let finalImage = imgData.url;
+    // Choose best image
+    let finalImage = imgData.url;
 
-  // heuristic check for logo vs main image
-  const w = imgData.width || 0;
-  const h = imgData.height || 0;
-  const isLogo = w < 400 || h < 200 || (w === h && w < 500);
+    // heuristic check for logo vs main image
+    const w = imgData.width || 0;
+    const h = imgData.height || 0;
+    const isLogo = w < 400 || h < 200 || (w === h && w < 500);
 
-  if (!finalImage || isLogo) {
-    if (screenData.url) finalImage = screenData.url;
-    else if (finalImage) { } // keep logo if no screenshot
-    else if (logoData.url) finalImage = logoData.url;
+    if (!finalImage || isLogo) {
+      if (screenData.url) finalImage = screenData.url;
+      else if (finalImage) { } // keep logo if no screenshot
+      else if (logoData.url) finalImage = logoData.url;
+    }
+
+    const title = data.data.title || '';
+    const description = data.data.description || '';
+    const pageText = `${title}\n${description}`;
+    const hasBlockedTitle = /error:\s*the request could not be satisfied|403\s*error/i.test(title);
+    const matchedCloudFrontSignals = CLOUDFRONT_ERROR_PATTERNS.filter(pattern => pattern.test(pageText)).length;
+    const isBlockedPage = hasBlockedTitle || matchedCloudFrontSignals >= 2;
+
+    // Some sites return CDN error pages as metadata/screenshot. Do not persist them as cover/title.
+    if (isBlockedPage) {
+      finalImage = '';
+    }
+
+    return {
+      title: isBlockedPage ? '' : title,
+      description: isBlockedPage ? '' : description,
+      image: finalImage
+    };
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  const title = data.data.title || '';
-  const description = data.data.description || '';
-  const pageText = `${title}\n${description}`;
-  const hasBlockedTitle = /error:\s*the request could not be satisfied|403\s*error/i.test(title);
-  const matchedCloudFrontSignals = CLOUDFRONT_ERROR_PATTERNS.filter(pattern => pattern.test(pageText)).length;
-  const isBlockedPage = hasBlockedTitle || matchedCloudFrontSignals >= 2;
-
-  // Some sites return CDN error pages as metadata/screenshot. Do not persist them as cover/title.
-  if (isBlockedPage) {
-    finalImage = '';
-  }
-
-  return {
-    title: isBlockedPage ? '' : title,
-    description: isBlockedPage ? '' : description,
-    image: finalImage
-  };
 }
 
 function isValidUrl(string) {

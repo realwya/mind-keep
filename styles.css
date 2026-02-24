@@ -449,9 +449,6 @@ body {
 
 .tag-filter-item.selected .tag-filter-checkbox svg {
   opacity: 1;
-}
-
-.tag-filter-item.selected .tag-filter-checkbox svg {
   stroke: var(--accent-color);
 }
 
@@ -1190,7 +1187,7 @@ body {
 
 @media (max-width: 600px) {
   .app {
-    padding: 0;
+    padding: 0.5rem;
   }
 
   .sidebar {
@@ -1222,30 +1219,8 @@ body {
     height: 3rem;
   }
 
-  .header {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-
   .main-wrapper {
     padding: 0 0.5rem;
-  }
-}
-
-/* ===== Responsive ===== */
-@media (min-width: 1600px) {
-  .app {
-    padding: 1rem;
-  }
-}
-
-@media (max-width: 600px) {
-  .app {
-    padding: 0.5rem;
-  }
-
-  .header {
-    padding: 1rem 0;
   }
 
   .cards-grid {
@@ -1266,9 +1241,28 @@ body {
   }
 }
 
+/* ===== Responsive ===== */
+@media (min-width: 1600px) {
+  .app {
+    padding: 1rem;
+  }
+}
+
 /* ===== Utility ===== */
 .hidden {
   display: none !important;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* Header Actions */

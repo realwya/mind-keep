@@ -56,7 +56,7 @@
           <div id="activeFilters" class="active-filters hidden">
             <div class="active-filters-header">
               <span class="active-filters-label">Selected Filters</span>
-              <button id="clearAllFilters" class="text-button clear-filters-btn" aria-label="Clear all filters">Clear all</button>
+              <button id="clearAllFilters" class="text-button clear-filters-btn" type="button" aria-label="Clear all filters">Clear all</button>
             </div>
             <div id="activeFiltersList" class="active-filters-list"></div>
           </div>
@@ -97,15 +97,15 @@
       <div class="main-wrapper">
         <!-- 文件夹选择引导 -->
         <section id="folderPrompt" class="folder-prompt">
-      <div class="prompt-content">
-        <div class="prompt-icon">
-          <i data-feather="folder" aria-hidden="true"></i>
-        </div>
-        <h2>Choose a storage location</h2>
-        <p>Select a local folder to store your notes and links.<br>Your data stays on your device.</p>
-        <button id="openFolderBtn" class="primary-button" aria-label="Open folder">Open folder</button>
-      </div>
-    </section>
+          <div class="prompt-content">
+            <div class="prompt-icon">
+              <i data-feather="folder" aria-hidden="true"></i>
+            </div>
+            <h2>Choose a storage location</h2>
+            <p>Select a local folder to store your notes and links.<br>Your data stays on your device.</p>
+            <button id="openFolderBtn" class="primary-button" type="button" aria-label="Open folder">Open folder</button>
+          </div>
+        </section>
 
     <!-- 主内容区域 (默认隐藏，选择文件夹后显示) -->
     <main id="mainContent" class="hidden">
@@ -119,6 +119,7 @@
 
           <!-- 展开状态 - 笔记 -->
           <form id="noteForm" class="add-box-expanded hidden">
+            <label for="noteContentInput" class="sr-only">Note content</label>
             <textarea id="noteContentInput" class="content-input" placeholder="Write something..." rows="3"></textarea>
             <div class="add-box-actions">
               <div class="action-buttons">
@@ -207,17 +208,19 @@
       <div class="edit-modal-body">
         <!-- 标题输入区域 -->
         <div class="edit-title-section">
+          <label for="editTitleInput" class="sr-only">Note title</label>
           <input type="text" id="editTitleInput" class="edit-title-input" placeholder="Title (optional)">
           <div class="title-error" id="editTitleError"></div>
         </div>
         <div id="editContentEditor" class="edit-codemirror hidden" aria-label="Edit note content"></div>
+        <label for="editContentTextarea" class="sr-only">Note content</label>
         <textarea id="editContentTextarea" class="edit-textarea" placeholder="Edit note content..." spellcheck="false"></textarea>
         <div id="editTagsContainer" class="tags-input-container"></div>
       </div>
       <div class="edit-modal-footer">
         <span class="char-count">0 chars</span>
         <div class="edit-modal-actions">
-          <button class="text-button primary btn-save-edit" aria-label="Save note edit">Save</button>
+          <button class="text-button primary btn-save-edit" type="button" aria-label="Save note edit">Save</button>
         </div>
       </div>
     </div>
@@ -234,36 +237,37 @@
             <span id="linkCoverPreviewHint">Cover preview unavailable</span>
           </div>
           <div class="form-group">
-            <label>Title</label>
-            <input type="text" name="title" class="form-input">
+            <label for="linkEditTitle">Title</label>
+            <input type="text" id="linkEditTitle" name="title" class="form-input">
           </div>
           <div class="form-group">
-            <label>Link</label>
-            <input type="url" name="url" class="form-input">
+            <label for="linkEditUrl">Link</label>
+            <input type="url" id="linkEditUrl" name="url" class="form-input">
           </div>
           <div class="form-group">
-            <label>Description</label>
-            <textarea name="description" class="form-textarea" rows="2"></textarea>
+            <label for="linkEditDescription">Description</label>
+            <textarea id="linkEditDescription" name="description" class="form-textarea" rows="2"></textarea>
           </div>
           <div class="form-group">
-            <label>Cover image</label>
-            <input type="text" name="image" class="form-input">
+            <label for="linkEditImage">Cover image</label>
+            <input type="text" id="linkEditImage" name="image" class="form-input">
           </div>
           <div class="form-group">
-            <label>Tags</label>
+            <label for="linkEditTags">Tags</label>
             <div id="linkEditTagsContainer" class="tags-input-container"></div>
           </div>
         </form>
       </div>
       <div class="edit-modal-footer">
         <div class="edit-modal-actions">
-          <button class="text-button primary btn-save-link-edit" aria-label="Save link edit">Save</button>
+          <button class="text-button primary btn-save-link-edit" type="button" aria-label="Save link edit">Save</button>
         </div>
       </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
   <script src="app.js"></script>
 </body>
 
