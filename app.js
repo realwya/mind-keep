@@ -327,6 +327,17 @@ async function handleCardClick(e) {
     return;
   }
 
+  // 1.2 Handle card-url click — open link in new tab
+  const cardUrl = e.target.closest('.card-url');
+  if (cardUrl) {
+    e.preventDefault();
+    e.stopPropagation();
+    const card = cardUrl.closest('.card');
+    const href = card?.querySelector('.open-link-button')?.href;
+    if (href) window.open(href, '_blank', 'noopener,noreferrer');
+    return;
+  }
+
   // 1.1 Handle task checkbox click: toggle and persist to markdown file
   const taskCheckbox = e.target.closest('.note-content input[type="checkbox"]');
   if (taskCheckbox) {

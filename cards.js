@@ -79,7 +79,7 @@ function createLinkCard(data) {
     }
 
     titleEl.textContent = data.title;
-    descriptionEl.textContent = data.description;
+    if (descriptionEl) descriptionEl.textContent = data.description;
   }
 
   urlTextEl.textContent = extractDomain(data.url);

@@ -807,19 +807,17 @@ body {
 
 /* 卡片操作栏 */
 .card-actions {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
   display: flex;
   align-items: center;
   padding: 0.25rem 0.5rem;
   background: var(--bg-card);
+  visibility: hidden;
+  transition: visibility var(--transition-fast), opacity var(--transition-fast);
   opacity: 0;
-  transition: opacity var(--transition-fast);
 }
 
 .card:hover .card-actions {
+  visibility: visible;
   opacity: 1;
 }
 
@@ -847,10 +845,6 @@ body {
   height: 100%;
   object-fit: cover;
   transition: transform var(--transition-normal);
-}
-
-.link-card:hover .card-image img {
-  transform: scale(1.02);
 }
 
 .card-image img[src=""],
@@ -897,8 +891,9 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  font-size: 0.75rem;
-  color: var(--text-muted);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  cursor: pointer;
 }
 
 .card-url svg {
@@ -963,19 +958,15 @@ body {
 
 .image-link-card .card-image img {
   height: auto;
-  max-height: 420px;
+  max-height: 640px;
   /* prevent oversized images from dominating the grid */
-  object-fit: contain;
+  object-fit: cover;
+  object-position: top;
   background: var(--bg-secondary);
 }
 
-.image-link-card .card-body,
-.image-link-card .card-actions {
+.image-link-card .card-body {
   display: none;
-}
-
-.image-link-card .card-tags {
-  padding: 0.5rem 1rem 0.75rem;
 }
 
 .image-link-card .card-tags:empty {
@@ -1668,7 +1659,11 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 0.375rem;
-  padding: 0.5rem 1rem 2.5rem;
+  padding: 0.75rem 1rem;
+}
+
+.card-tags:empty {
+  display: none;
 }
 
 .card-tags .tag {
