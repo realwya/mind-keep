@@ -250,8 +250,8 @@ body {
   user-select: none;
 }
 
-.search-input:focus ~ .search-shortcut,
-.search-input:not(:placeholder-shown) ~ .search-shortcut {
+.search-input:focus~.search-shortcut,
+.search-input:not(:placeholder-shown)~.search-shortcut {
   display: none;
 }
 
@@ -821,10 +821,6 @@ body {
 
 .card:hover .card-actions {
   opacity: 1;
-}
-
-.delete-button {
-  color: var(--text-muted);
 }
 
 .delete-button:hover {
