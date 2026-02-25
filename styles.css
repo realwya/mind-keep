@@ -66,7 +66,7 @@ html {
 
 body {
   font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
-  background: var(--bg-secondary);
+  background: var(--bg-primary);
   color: var(--text-primary);
   line-height: 1.5;
   min-height: 100vh;
@@ -97,7 +97,8 @@ body {
 /* ===== 侧边栏 ===== */
 .sidebar {
   width: var(--sidebar-width);
-  background: var(--bg-card);
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -105,7 +106,6 @@ body {
   top: 0;
   overflow: hidden;
   transition: width var(--transition-normal), transform var(--transition-normal);
-  box-shadow: var(--shadow-sm);
 }
 
 .sidebar-header {
@@ -149,7 +149,7 @@ body {
   gap: 0.5rem;
   justify-content: flex-start;
   padding: 0.625rem 0.75rem;
-  background: var(--bg-secondary);
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   font-size: 0.875rem;
@@ -163,7 +163,6 @@ body {
 .folder-button:hover {
   background: var(--bg-hover);
   border-color: var(--border-color-hover);
-  box-shadow: var(--shadow-sm);
 }
 
 .folder-button svg {
@@ -192,9 +191,8 @@ body {
 }
 
 .sidebar-footer {
-  border-top: 1px solid var(--border-color);
   padding: 0.75rem;
-  background: var(--bg-card);
+  background: var(--bg-secondary);
 }
 
 .sidebar-search {
