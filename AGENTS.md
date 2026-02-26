@@ -23,21 +23,20 @@ npx serve .
 bash tests/*.test.sh
 
 # Run single test
-bash tests/feather-icons.test.sh
-bash tests/copy-markdown-action.test.sh
-```
+bash tests/feather-icons.test.sh```
 
 ## Code Style
 
-### JavaScript (app.js)
+### JavaScript Architecture
 
+- **Modularization**: Code is split by feature (`config.js`, `utils.js`, `fs.js`, `cards.js`, `sidebar.js`, `tags-input.js`, `editor.js`, `app.js`).
 - **Comments**: Section headers in Chinese (`// ===== 常量配置 =====`), inline comments in English
 - **Naming**: camelCase for variables/functions, PascalCase for classes
 - **Organization**: Group by feature with `// ===== Section Name =====` headers
 - **Error handling**: Prefer `try/catch` with user-friendly `showPopup()` messages
 - **Async**: Use `async/await`, wrap IndexedDB in Promise-based API
-- **DOM**: Centralize element refs in `elements` object, use event delegation
-- **Runtime dependencies**: Keep browser-side CDN/dynamic imports only (Marked, Feather, optional CodeMirror modules), no npm packages
+- **DOM**: Centralize element refs in `elements` object (in `config.js`), use event delegation
+- **Runtime dependencies**: Keep browser-side CDN/dynamic imports only (Marked, Feather, DOMPurify, optional CodeMirror modules), no npm packages
 
 ### CSS (styles.css)
 
@@ -82,18 +81,20 @@ Current checks in this repo:
 
 - `tests/feather-icons.test.sh`: Feather icon usage and no inline SVG
 - `tests/copy-markdown-action.test.sh`: Note-card copy markdown action wiring and clipboard feedback
+- `tests/archive-view.test.sh`: Archive view functionality logic
+- `tests/sidebar-collapse-toggle.test.sh`: Sidebar toggle interactions
 
 ## File System Conventions
 
 - **Filenames**: Sanitized titles (remove `<>:"/\|?*`, max 200 chars)
 - **IDs**: Filename without `.md` extension
-- **Trash**: Move to `.trash/` subfolder (don't delete)
+- **Trash/Archive**: Move to `.trash/` or `Archive/` subfolders (don't delete)
 - **Storage**: Markdown files with YAML front matter
 
 ## State Management
 
 - Global state: `items[]`, `dirHandle`, `pendingUrls`, `currentEditingItem`, `currentView`, `searchQuery`
-- View modes: `VIEW_ACTIVE` vs `VIEW_TRASH`
+- View modes: `VIEW_ACTIVE`, `VIEW_ARCHIVE`, and `VIEW_TRASH`
 - Filters: `selectedTags` Set, `allTags` array of {name, count}, single-select `selectedType`, `allTypes`
 - Editor state: `noteEditorView` and lazy `noteEditorLoader` for CodeMirror fallback behavior
 - Always sync memory state to filesystem immediately
