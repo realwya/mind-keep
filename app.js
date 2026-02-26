@@ -375,6 +375,33 @@ async function handleCardClick(e) {
     return;
   }
 
+  // 2.5 Handle copy-link button
+  const copyLinkBtn = e.target.closest('.copy-link-button');
+  if (copyLinkBtn) {
+    e.preventDefault();
+    e.stopPropagation();
+    copyLinkBtn.blur();
+
+    const card = copyLinkBtn.closest('.card');
+    if (!card) return;
+
+    const id = card.dataset.id;
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error('Clipboard API unavailable');
+      }
+      const { data } = getItemParsed(item);
+      await navigator.clipboard.writeText(data.url);
+      showPopup('Link copied');
+    } catch (err) {
+      showPopup('Copy failed', 'error');
+    }
+    return;
+  }
+
   // 3. Handle delete button click
   const deleteBtn = e.target.closest('.delete-button');
   if (deleteBtn) {
