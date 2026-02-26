@@ -893,12 +893,27 @@ body {
   display: none;
 }
 
-.trash-view .restore-button {
+.trash-view .restore-button,
+.archive-view .restore-button {
   display: flex;
 }
 
 .restore-button:hover {
   color: var(--success-color);
+  background: var(--bg-hover);
+}
+
+/* Archive button: visible only in active notes view */
+.archive-button {
+  display: none;
+}
+
+.active-view .archive-button {
+  display: flex;
+}
+
+.archive-button:hover {
+  color: var(--accent-light-text);
   background: var(--bg-hover);
 }
 

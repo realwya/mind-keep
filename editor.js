@@ -286,11 +286,11 @@ async function saveEditedNote() {
   try {
     // Rename file if title changed
     if (hasFilenameChange) {
-      await renameFile(oldFilename, newFilename);
+      await renameFile(oldFilename, newFilename, currentView);
     }
 
     // Save content to file (using new filename)
-    await saveFile(newFilename, finalContent);
+    await saveFile(newFilename, finalContent, currentView);
 
     // Update in-memory state
     const index = items.findIndex(i => i.id === currentEditingItem.id);
@@ -477,7 +477,7 @@ async function saveLinkEdit() {
 
   try {
     // 1. Save to filesystem
-    await saveFile(currentEditingItem.fileName, content);
+    await saveFile(currentEditingItem.fileName, content, currentView);
 
     // 2. Update in-memory state
     const index = items.findIndex(i => i.id === currentEditingItem.id);

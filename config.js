@@ -15,6 +15,8 @@ const DB_NAME = 'keep-db';
 const STORE_NAME = 'handles';
 const X_WIDGETS_SCRIPT_SRC = 'https://platform.twitter.com/widgets.js';
 const X_WIDGETS_SCRIPT_ID = 'xWidgetsScript';
+const ARCHIVE_DIR_NAME = 'Archive';
+const TRASH_DIR_NAME = '.trash';
 
 // ===== IndexedDB 简易封装 =====
 const db = {
@@ -99,6 +101,7 @@ const elements = {
   sidebar: document.getElementById('tagSidebar'),
   closeSidebarBtn: document.getElementById('closeSidebarBtn'),
   viewNotesBtn: document.getElementById('viewNotesBtn'),
+  viewArchiveBtn: document.getElementById('viewArchiveBtn'),
   viewTrashBtn: document.getElementById('viewTrashBtn'),
   searchInput: document.getElementById('searchInput'),
   clearSearchBtn: document.getElementById('clearSearchBtn'),
@@ -142,6 +145,7 @@ let dirHandle = null;
 let items = []; // { id, content, createdAt, handle }
 const pendingUrls = new Set();
 const VIEW_ACTIVE = 'active';
+const VIEW_ARCHIVE = 'archive';
 const VIEW_TRASH = 'trash';
 let currentView = VIEW_ACTIVE;
 let searchQuery = '';

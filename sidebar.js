@@ -67,8 +67,9 @@ function refreshTagSuggestions() {
 
 function updateViewControls() {
   elements.viewNotesBtn.classList.toggle('active', currentView === VIEW_ACTIVE);
+  elements.viewArchiveBtn.classList.toggle('active', currentView === VIEW_ARCHIVE);
   elements.viewTrashBtn.classList.toggle('active', currentView === VIEW_TRASH);
-  elements.addSection.classList.toggle('hidden', currentView === VIEW_TRASH);
+  elements.addSection.classList.toggle('hidden', currentView !== VIEW_ACTIVE);
   updateTrashActions();
 }
 

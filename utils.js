@@ -378,6 +378,8 @@ function updateTrashActions() {
 function updateEmptyState() {
   if (searchQuery) {
     elements.emptyStateText.textContent = 'No results found';
+  } else if (currentView === VIEW_ARCHIVE) {
+    elements.emptyStateText.textContent = 'No files in Archive';
   } else if (currentView === VIEW_TRASH) {
     elements.emptyStateText.textContent = 'No files in .trash';
   } else {

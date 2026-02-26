@@ -88,6 +88,7 @@ function bindEvents() {
   window.addEventListener('resize', syncSidebarActionButton);
   syncSidebarActionButton();
   elements.viewNotesBtn.addEventListener('click', () => switchView(VIEW_ACTIVE));
+  elements.viewArchiveBtn.addEventListener('click', () => switchView(VIEW_ARCHIVE));
   elements.viewTrashBtn.addEventListener('click', () => switchView(VIEW_TRASH));
   elements.searchInput.addEventListener('input', handleSearchInput);
   elements.searchInput.addEventListener('keydown', handleSearchKeydown);
@@ -426,6 +427,42 @@ async function handleCardClick(e) {
     return;
   }
 
+  // 2.7 Handle archive button
+  const archiveBtn = e.target.closest('.archive-button');
+  if (archiveBtn) {
+    e.preventDefault();
+    e.stopPropagation();
+    archiveBtn.blur();
+    if (currentView !== VIEW_ACTIVE) return;
+
+    const card = archiveBtn.closest('.card');
+    if (!card) return;
+    const id = card.dataset.id;
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+
+    try {
+      await archiveFile(item.fileName || `${item.id}.md`);
+
+      items = items.filter(i => i.id !== id);
+      card.style.transition = 'all 0.2s ease';
+      card.style.opacity = '0';
+      card.style.transform = 'scale(0.9)';
+
+      setTimeout(() => {
+        if (card.parentNode) card.remove();
+        updateEmptyState();
+        updateTypeCapsules();
+        updateSidebarTags();
+      }, 200);
+
+      showPopup('Archived');
+    } catch (err) {
+      showPopup('Archive failed: ' + err.message, 'error');
+    }
+    return;
+  }
+
   // 3. Handle restore button click
   const restoreBtn = e.target.closest('.restore-button');
   if (restoreBtn) {
@@ -439,7 +476,11 @@ async function handleCardClick(e) {
     if (!item) return;
 
     try {
-      await restoreFile(item.fileName || `${item.id}.md`);
+      if (currentView === VIEW_ARCHIVE) {
+        await restoreArchiveFile(item.fileName || `${item.id}.md`);
+      } else {
+        await restoreFile(item.fileName || `${item.id}.md`);
+      }
 
       items = items.filter(i => i.id !== id);
       card.style.transition = 'all 0.2s ease';
@@ -519,7 +560,7 @@ async function handleCardClick(e) {
         if (isTrashView) {
           await deleteTrashFile(item.fileName || `${item.id}.md`);
         } else {
-          await deleteFile(item.fileName || `${item.id}.md`);
+          await deleteFile(item.fileName || `${item.id}.md`, currentView);
         }
 
         // Animate card removal
@@ -593,7 +634,7 @@ async function handleTaskCheckboxToggle(checkboxEl, explicitChecked) {
 
   try {
     const filename = item.fileName || `${item.id}.md`;
-    await saveFile(filename, updatedRaw);
+    await saveFile(filename, updatedRaw, currentView);
 
     const itemIndex = items.findIndex(i => i.id === item.id);
     if (itemIndex !== -1) {

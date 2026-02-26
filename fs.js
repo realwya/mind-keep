@@ -52,6 +52,7 @@ async function handleChangeFolder() {
     elements.folderName.textContent = previousFolderName;
     elements.searchInput.value = previousSearchQuery;
 
+    syncCardsGridViewClass(currentView);
     updateViewControls();
     updateSidebarTags();
     filterAndRenderItems();
@@ -60,10 +61,12 @@ async function handleChangeFolder() {
 }
 
 async function finishSetupFolder() {
+  await dirHandle.getDirectoryHandle(ARCHIVE_DIR_NAME, { create: true });
   elements.folderName.textContent = dirHandle.name;
   elements.folderPrompt.classList.add('hidden');
   elements.mainContent.classList.remove('hidden');
   currentView = VIEW_ACTIVE;
+  syncCardsGridViewClass(currentView);
   updateViewControls();
 
   await loadItems(currentView);
@@ -93,13 +96,27 @@ async function verifyPermission(fileHandle, readWrite) {
 async function getItemsDirectoryHandle(view) {
   if (!dirHandle) return null;
   if (view === VIEW_ACTIVE) return dirHandle;
+  if (view === VIEW_ARCHIVE) {
+    try {
+      return await dirHandle.getDirectoryHandle(ARCHIVE_DIR_NAME);
+    } catch (e) {
+      if (e.name === 'NotFoundError') return null;
+      throw e;
+    }
+  }
 
   try {
-    return await dirHandle.getDirectoryHandle('.trash');
+    return await dirHandle.getDirectoryHandle(TRASH_DIR_NAME);
   } catch (e) {
     if (e.name === 'NotFoundError') return null;
     throw e;
   }
+}
+
+function syncCardsGridViewClass(view) {
+  elements.cardsGrid.classList.toggle('active-view', view === VIEW_ACTIVE);
+  elements.cardsGrid.classList.toggle('archive-view', view === VIEW_ARCHIVE);
+  elements.cardsGrid.classList.toggle('trash-view', view === VIEW_TRASH);
 }
 
 async function loadItems(view = currentView) {
@@ -156,16 +173,28 @@ async function switchView(view) {
   selectedTags.clear();
   selectedType = null;
   collapseForm();
-  elements.cardsGrid.classList.toggle('trash-view', view === VIEW_TRASH);
+  syncCardsGridViewClass(view);
   updateViewControls();
   updateTypeCapsules();
   await loadItems(currentView);
 }
 
 // ===== 数据写入 (C/U) =====
-async function saveFile(filename, content) {
+async function getWritableDirectoryHandle(view = VIEW_ACTIVE) {
+  if (view === VIEW_ACTIVE) return dirHandle;
+  if (view === VIEW_ARCHIVE) {
+    return dirHandle.getDirectoryHandle(ARCHIVE_DIR_NAME, { create: true });
+  }
+  if (view === VIEW_TRASH) {
+    return dirHandle.getDirectoryHandle(TRASH_DIR_NAME, { create: true });
+  }
+  throw new Error(`Unsupported view: ${view}`);
+}
+
+async function saveFile(filename, content, targetView = VIEW_ACTIVE) {
   try {
-    const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+    const targetHandle = await getWritableDirectoryHandle(targetView);
+    const fileHandle = await targetHandle.getFileHandle(filename, { create: true });
 
     const writable = await fileHandle.createWritable();
     await writable.write(content);
@@ -178,13 +207,17 @@ async function saveFile(filename, content) {
   }
 }
 
-async function deleteFile(filename) {
+async function deleteFile(filename, sourceView = VIEW_ACTIVE) {
   try {
     // 1. Get or create .trash directory
-    const trashHandle = await dirHandle.getDirectoryHandle('.trash', { create: true });
+    const trashHandle = await dirHandle.getDirectoryHandle(TRASH_DIR_NAME, { create: true });
+    const sourceHandle = await getItemsDirectoryHandle(sourceView);
+    if (!sourceHandle) {
+      throw new Error(`Source directory for ${sourceView} not found`);
+    }
 
     // 2. Get source file handle
-    const fileHandle = await dirHandle.getFileHandle(filename);
+    const fileHandle = await sourceHandle.getFileHandle(filename);
 
     // 3. Try move API (Chrome 109+ and modern browsers)
     if (fileHandle.move) {
@@ -201,7 +234,7 @@ async function deleteFile(filename) {
       await writable.close();
 
       // Delete original file
-      await dirHandle.removeEntry(filename);
+      await sourceHandle.removeEntry(filename);
     }
   } catch (e) {
     console.error('Move to trash failed:', e);
@@ -209,9 +242,33 @@ async function deleteFile(filename) {
   }
 }
 
+async function archiveFile(filename) {
+  try {
+    const archiveHandle = await dirHandle.getDirectoryHandle(ARCHIVE_DIR_NAME, { create: true });
+    const fileHandle = await dirHandle.getFileHandle(filename);
+
+    if (fileHandle.move) {
+      await fileHandle.move(archiveHandle);
+    } else {
+      const file = await fileHandle.getFile();
+      const content = await file.text();
+
+      const newFileHandle = await archiveHandle.getFileHandle(filename, { create: true });
+      const writable = await newFileHandle.createWritable();
+      await writable.write(content);
+      await writable.close();
+
+      await dirHandle.removeEntry(filename);
+    }
+  } catch (e) {
+    console.error('Move to archive failed:', e);
+    throw e;
+  }
+}
+
 async function restoreFile(filename) {
   try {
-    const trashHandle = await dirHandle.getDirectoryHandle('.trash');
+    const trashHandle = await dirHandle.getDirectoryHandle(TRASH_DIR_NAME);
     const fileHandle = await trashHandle.getFileHandle(filename);
 
     if (fileHandle.move) {
@@ -233,8 +290,32 @@ async function restoreFile(filename) {
   }
 }
 
+async function restoreArchiveFile(filename) {
+  try {
+    const archiveHandle = await dirHandle.getDirectoryHandle(ARCHIVE_DIR_NAME);
+    const fileHandle = await archiveHandle.getFileHandle(filename);
+
+    if (fileHandle.move) {
+      await fileHandle.move(dirHandle);
+    } else {
+      const file = await fileHandle.getFile();
+      const content = await file.text();
+
+      const newFileHandle = await dirHandle.getFileHandle(filename, { create: true });
+      const writable = await newFileHandle.createWritable();
+      await writable.write(content);
+      await writable.close();
+
+      await archiveHandle.removeEntry(filename);
+    }
+  } catch (e) {
+    console.error('Restore archive file failed:', e);
+    throw e;
+  }
+}
+
 async function deleteAllTrashFiles() {
-  const trashHandle = await dirHandle.getDirectoryHandle('.trash');
+  const trashHandle = await dirHandle.getDirectoryHandle(TRASH_DIR_NAME);
   const entries = [];
   for await (const entry of trashHandle.values()) {
     if (entry.kind === 'file') entries.push(entry.name);
@@ -246,7 +327,7 @@ async function deleteAllTrashFiles() {
 
 async function deleteTrashFile(filename) {
   try {
-    const trashHandle = await dirHandle.getDirectoryHandle('.trash');
+    const trashHandle = await dirHandle.getDirectoryHandle(TRASH_DIR_NAME);
     await trashHandle.removeEntry(filename);
   } catch (e) {
     console.error('Delete from trash failed:', e);
@@ -259,13 +340,14 @@ async function deleteTrashFile(filename) {
  * @param {string} oldFilename - 旧文件名（如 "MyNote.md"）
  * @param {string} newFilename - 新文件名（如 "NewTitle.md"）
  */
-async function renameFile(oldFilename, newFilename) {
+async function renameFile(oldFilename, newFilename, targetView = VIEW_ACTIVE) {
   try {
-    const fileHandle = await dirHandle.getFileHandle(oldFilename);
+    const targetHandle = await getWritableDirectoryHandle(targetView);
+    const fileHandle = await targetHandle.getFileHandle(oldFilename);
 
     // Prefer move API (Chrome 109+)
     if (fileHandle.move) {
-      await fileHandle.move(dirHandle, newFilename);
+      await fileHandle.move(targetHandle, newFilename);
       return;
     }
 
@@ -273,12 +355,12 @@ async function renameFile(oldFilename, newFilename) {
     const file = await fileHandle.getFile();
     const content = await file.text();
 
-    const newFileHandle = await dirHandle.getFileHandle(newFilename, { create: true });
+    const newFileHandle = await targetHandle.getFileHandle(newFilename, { create: true });
     const writable = await newFileHandle.createWritable();
     await writable.write(content);
     await writable.close();
 
-    await dirHandle.removeEntry(oldFilename);
+    await targetHandle.removeEntry(oldFilename);
   } catch (e) {
     console.error('Rename file failed:', e);
     throw e;
