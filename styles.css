@@ -33,6 +33,7 @@
   /* 侧边栏变量 */
   --sidebar-width: 280px;
   --sidebar-collapsed-width: 56px;
+  --sidebar-row-height: 2.25rem;
   --tag-selected-bg: #1a73e8;
   --tag-selected-text: #ffffff;
   --tag-count-bg: #f1f3f4;
@@ -147,7 +148,8 @@ body {
   align-items: center;
   gap: 0.5rem;
   justify-content: flex-start;
-  padding: 0.625rem 0.75rem;
+  height: var(--sidebar-row-height);
+  padding: 0 0.75rem;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
@@ -214,7 +216,7 @@ body {
 
 .search-input {
   width: 100%;
-  height: 2.25rem;
+  height: var(--sidebar-row-height);
   padding: 0.5rem 2rem 0.5rem 0.75rem;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
@@ -299,9 +301,10 @@ body {
   align-items: center;
   gap: 0.5rem;
   width: 100%;
-  padding: 0.4rem 0.625rem;
+  height: var(--sidebar-row-height);
+  padding: 0 0.625rem;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--text-secondary);
   font-size: 0.8125rem;
@@ -1591,7 +1594,7 @@ body {
   position: relative;
   width: 100%;
   max-width: 700px;
-  max-height: 85vh;
+  max-height: 90vh;
   background: var(--bg-card);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
@@ -1643,7 +1646,7 @@ body {
 
 .edit-codemirror {
   width: 100%;
-  height: 600px;
+  height: 800px;
   min-height: 300px;
   padding: 1.25rem;
 }
