@@ -67,7 +67,7 @@ html {
 
 body {
   font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
-  background: var(--bg-primary);
+  background: var(--bg-secondary);
   color: var(--text-primary);
   line-height: 1.5;
   min-height: 100vh;
@@ -81,6 +81,7 @@ body {
   margin: 0;
   padding: 1rem;
   min-width: 0;
+  background: var(--bg-secondary);
 }
 
 /* ===== 布局容器 ===== */
@@ -635,9 +636,9 @@ body {
   /* Extend background to cover parent padding */
   right: -2rem;
   bottom: 0;
-  background: var(--bg-primary);
+  background: var(--bg-secondary);
   /* Use a slight transparency and backdrop blur for modern aesthetic if supported */
-  background: color-mix(in srgb, var(--bg-primary) 95%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 95%, transparent);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   z-index: -1;
