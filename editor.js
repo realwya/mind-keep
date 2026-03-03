@@ -83,8 +83,8 @@ async function ensureNoteEditor() {
     try {
       const [
         { EditorState, StateField },
-        { EditorView, Decoration },
-        { markdown, markdownLanguage },
+        { EditorView, Decoration, keymap },
+        { markdown, markdownLanguage, markdownKeymap },
         { HighlightStyle, syntaxHighlighting },
         { tags }
       ] = await Promise.all([
@@ -110,6 +110,7 @@ async function ensureNoteEditor() {
           doc: editModal.textarea.value || '',
           extensions: [
             markdown({ base: markdownLanguage }),
+            keymap.of(markdownKeymap),
             syntaxHighlighting(syntaxHighlighter),
             headingExtension,
             EditorView.lineWrapping,
@@ -368,12 +369,29 @@ function formatEditedTime(timestamp) {
     return 'Edited -';
   }
 
+  const now = new Date();
+  const startOfNow = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const dayDiff = Math.round((startOfNow - startOfDate) / 86400000);
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+
+  if (dayDiff >= 0 && dayDiff <= 30) {
+    if (dayDiff === 0) {
+      return `Edited Today ${hours}:${minutes}`;
+    }
+    if (dayDiff === 1) {
+      return `Edited Yesterday ${hours}:${minutes}`;
+    }
+
+    const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+    return `Edited ${rtf.format(-dayDiff, 'day')}`;
+  }
+
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `Edited ${year}-${month}-${day} ${hours}:${minutes}`;
+  return `Edited ${year}-${month}-${day}`;
 }
 
 function updateEditedTime(timestamp) {
