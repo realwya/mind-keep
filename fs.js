@@ -169,6 +169,9 @@ async function loadItems(view = currentView) {
 
 async function switchView(view) {
   if (!dirHandle || view === currentView) return;
+  if (typeof closeCardTagPopover === 'function') {
+    closeCardTagPopover();
+  }
   currentView = view;
   selectedTags.clear();
   selectedType = null;

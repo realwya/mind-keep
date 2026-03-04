@@ -14,6 +14,221 @@ markedRenderer.checkbox = function checkboxRenderer(arg) {
 };
 marked.use({ renderer: markedRenderer });
 
+let activeCardTagPopover = null;
+let cardTagSaveQueue = Promise.resolve();
+
+function normalizeTagList(tags) {
+  const list = Array.isArray(tags) ? tags : [];
+  const seen = new Set();
+  return list
+    .map(tag => typeof tag === 'string' ? tag.trim() : '')
+    .filter(tag => {
+      if (!tag) return false;
+      if (seen.has(tag)) return false;
+      seen.add(tag);
+      return true;
+    });
+}
+
+function closeCardTagPopover() {
+  if (!activeCardTagPopover) return;
+
+  const {
+    popover,
+    onDocumentPointerDown,
+    onDocumentKeydown,
+    onViewportChange
+  } = activeCardTagPopover;
+
+  document.removeEventListener('pointerdown', onDocumentPointerDown, true);
+  document.removeEventListener('keydown', onDocumentKeydown, true);
+  window.removeEventListener('resize', onViewportChange);
+  window.removeEventListener('scroll', onViewportChange, true);
+
+  if (popover?.parentNode) {
+    popover.parentNode.removeChild(popover);
+  }
+
+  activeCardTagPopover = null;
+}
+
+function positionCardTagPopover() {
+  if (!activeCardTagPopover) return;
+
+  const { button, popover } = activeCardTagPopover;
+  if (!button?.isConnected || !popover?.isConnected) {
+    closeCardTagPopover();
+    return;
+  }
+
+  const margin = 8;
+  const buttonRect = button.getBoundingClientRect();
+
+  popover.style.visibility = 'hidden';
+  popover.style.pointerEvents = 'none';
+  const popoverRect = popover.getBoundingClientRect();
+
+  // Prefer placing the popover at the button's upper-right corner.
+  let left = buttonRect.right + margin;
+  if (left + popoverRect.width > window.innerWidth - margin) {
+    left = buttonRect.left - popoverRect.width - margin;
+  }
+  left = Math.max(margin, Math.min(left, window.innerWidth - popoverRect.width - margin));
+
+  let top = buttonRect.top - popoverRect.height - margin;
+  if (top < margin) {
+    top = buttonRect.bottom + margin;
+  }
+  top = Math.max(margin, Math.min(top, window.innerHeight - popoverRect.height - margin));
+
+  popover.style.left = `${Math.round(left + window.scrollX)}px`;
+  popover.style.top = `${Math.round(top + window.scrollY)}px`;
+  popover.style.visibility = 'visible';
+  popover.style.pointerEvents = 'auto';
+}
+
+function enqueueCardTagSave(task) {
+  const run = cardTagSaveQueue.then(task);
+  cardTagSaveQueue = run.catch(() => {});
+  return run;
+}
+
+function shouldReapplyCardFilters() {
+  return selectedTags.size > 0 || Boolean(selectedType) || Boolean(searchQuery);
+}
+
+async function persistCardTags(item, cardEl, nextTags) {
+  const normalizedTags = normalizeTagList(nextTags);
+  const { data, content } = getItemParsed(item);
+  const nextData = { ...data };
+
+  if (normalizedTags.length > 0) {
+    nextData.tags = normalizedTags.join(',');
+  } else {
+    delete nextData.tags;
+  }
+
+  const nextContent = createMarkdownWithFrontMatter(nextData, content);
+  if (nextContent === item.content) return;
+
+  const filename = item.fileName || `${item.id}.md`;
+  await saveFile(filename, nextContent, currentView);
+
+  item.content = nextContent;
+  item.createdAt = Date.now();
+  item._parsed = { data: nextData, content };
+  item._parsedSource = nextContent;
+
+  const tagsEl = cardEl.querySelector('.card-tags');
+  if (tagsEl) {
+    renderTags(tagsEl, normalizedTags);
+  }
+
+  updateSidebarTags();
+
+  if (shouldReapplyCardFilters()) {
+    filterAndRenderItems();
+  }
+}
+
+function openCardTagPopover(buttonEl, item, cardEl) {
+  if (!buttonEl || !item || !cardEl) return;
+  if (currentView === VIEW_TRASH) return;
+
+  if (activeCardTagPopover?.button === buttonEl) {
+    closeCardTagPopover();
+    return;
+  }
+  closeCardTagPopover();
+
+  const popover = document.createElement('div');
+  popover.className = 'card-tag-popover';
+
+  const header = document.createElement('div');
+  header.className = 'card-tag-popover-header';
+  const title = document.createElement('span');
+  title.className = 'card-tag-popover-title';
+  title.textContent = 'Manage tags';
+  header.appendChild(title);
+
+  const body = document.createElement('div');
+  body.className = 'card-tag-popover-body';
+  const tagsContainer = document.createElement('div');
+  tagsContainer.className = 'tags-input-container';
+  body.appendChild(tagsContainer);
+
+  popover.append(header, body);
+  document.body.appendChild(popover);
+
+  const { data } = getItemParsed(item);
+  const initialTags = data.tags ? data.tags.split(',').map(t => t.trim()).filter(t => t) : [];
+  const popoverId = `${item.id}:${Date.now()}`;
+
+  const tagsInput = new TagsInput(tagsContainer, {
+    enableSuggestions: true,
+    matchMode: 'includes',
+    suggestionsProvider: () => allTags.map(t => t.name),
+    onChange: () => {}
+  });
+  tagsInput.setTags(initialTags);
+
+  const onDocumentPointerDown = (event) => {
+    if (!activeCardTagPopover || activeCardTagPopover.id !== popoverId) return;
+    const target = event.target;
+    if (!(target instanceof Node)) return;
+    if (popover.contains(target) || buttonEl.contains(target)) return;
+    closeCardTagPopover();
+  };
+
+  const onDocumentKeydown = (event) => {
+    if (event.key !== 'Escape') return;
+    if (!activeCardTagPopover || activeCardTagPopover.id !== popoverId) return;
+    event.preventDefault();
+    event.stopPropagation();
+    closeCardTagPopover();
+  };
+
+  const onViewportChange = () => {
+    if (!activeCardTagPopover || activeCardTagPopover.id !== popoverId) return;
+    if (!buttonEl.isConnected || !cardEl.isConnected) {
+      closeCardTagPopover();
+      return;
+    }
+    positionCardTagPopover();
+  };
+
+  tagsInput.onChange = (tags) => {
+    const nextTags = normalizeTagList(tags);
+    enqueueCardTagSave(async () => {
+      if (!activeCardTagPopover || activeCardTagPopover.id !== popoverId) return;
+      await persistCardTags(item, cardEl, nextTags);
+      if (!cardEl.isConnected) {
+        closeCardTagPopover();
+      }
+    }).catch((err) => {
+      showPopup('Save failed: ' + err.message, 'error');
+    });
+  };
+
+  activeCardTagPopover = {
+    id: popoverId,
+    button: buttonEl,
+    card: cardEl,
+    popover,
+    onDocumentPointerDown,
+    onDocumentKeydown,
+    onViewportChange
+  };
+
+  document.addEventListener('pointerdown', onDocumentPointerDown, true);
+  document.addEventListener('keydown', onDocumentKeydown, true);
+  window.addEventListener('resize', onViewportChange);
+  window.addEventListener('scroll', onViewportChange, true);
+
+  positionCardTagPopover();
+  tagsInput.focus();
+}
+
 // ===== 初始化 =====
 async function init() {
   // Initialize TagsInput components
@@ -89,9 +304,18 @@ function bindEvents() {
   elements.closeSidebarBtn.addEventListener('click', toggleSidebarCollapse);
   window.addEventListener('resize', syncSidebarActionButton);
   syncSidebarActionButton();
-  elements.viewNotesBtn.addEventListener('click', () => switchView(VIEW_ACTIVE));
-  elements.viewArchiveBtn.addEventListener('click', () => switchView(VIEW_ARCHIVE));
-  elements.viewTrashBtn.addEventListener('click', () => switchView(VIEW_TRASH));
+  elements.viewNotesBtn.addEventListener('click', () => {
+    closeCardTagPopover();
+    switchView(VIEW_ACTIVE);
+  });
+  elements.viewArchiveBtn.addEventListener('click', () => {
+    closeCardTagPopover();
+    switchView(VIEW_ARCHIVE);
+  });
+  elements.viewTrashBtn.addEventListener('click', () => {
+    closeCardTagPopover();
+    switchView(VIEW_TRASH);
+  });
   elements.searchInput.addEventListener('input', handleSearchInput);
   elements.searchInput.addEventListener('keydown', handleSearchKeydown);
   elements.clearSearchBtn.addEventListener('click', clearSearchQuery);
@@ -136,6 +360,12 @@ function bindEvents() {
 
   // Keyboard shortcuts
   document.addEventListener('keydown', async (e) => {
+    if (e.key === 'Escape' && activeCardTagPopover) {
+      e.preventDefault();
+      closeCardTagPopover();
+      return;
+    }
+
     // ESC closes sidebar
     if (e.key === 'Escape' && elements.sidebar.classList.contains('open')) {
       closeSidebar();
@@ -473,11 +703,32 @@ async function handleCardClick(e) {
     return;
   }
 
+  // 2.6 Handle tag-manage button
+  const tagManageBtn = e.target.closest('.tag-manage-button');
+  if (tagManageBtn) {
+    e.preventDefault();
+    e.stopPropagation();
+    tagManageBtn.blur();
+
+    if (currentView === VIEW_TRASH) return;
+
+    const card = tagManageBtn.closest('.card');
+    if (!card) return;
+
+    const id = card.dataset.id;
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+
+    openCardTagPopover(tagManageBtn, item, card);
+    return;
+  }
+
   // 2.7 Handle archive button
   const archiveBtn = e.target.closest('.archive-button');
   if (archiveBtn) {
     e.preventDefault();
     e.stopPropagation();
+    closeCardTagPopover();
     archiveBtn.blur();
     if (currentView !== VIEW_ACTIVE) return;
 
@@ -514,6 +765,7 @@ async function handleCardClick(e) {
   if (restoreBtn) {
     e.preventDefault();
     e.stopPropagation();
+    closeCardTagPopover();
     restoreBtn.blur();
 
     const card = restoreBtn.closest('.card');
@@ -554,6 +806,7 @@ async function handleCardClick(e) {
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
+    closeCardTagPopover();
     deleteBtn.blur();
 
     const card = deleteBtn.closest('.card');
@@ -645,6 +898,7 @@ async function handleCardClick(e) {
   }
 
   // Open edit modal (link or note)
+  closeCardTagPopover();
   e.preventDefault();
   e.stopPropagation();
   openEditModal(item);

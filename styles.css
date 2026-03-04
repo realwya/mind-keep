@@ -830,7 +830,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.25rem 0.5rem;
+  padding: 0.25rem 0.75rem;
   background: var(--bg-card);
   visibility: hidden;
   transition: visibility var(--transition-fast), opacity var(--transition-fast);
@@ -884,11 +884,20 @@ body {
   display: flex;
 }
 
+.tag-manage-button {
+  display: none;
+  --action-hover-fg: var(--accent-color);
+}
+
+.active-view .tag-manage-button,
+.archive-view .tag-manage-button {
+  display: flex;
+}
+
 .card-image {
   width: 100%;
   background: var(--bg-secondary);
   overflow: hidden;
-  max-height: 400px;
 }
 
 .card-image img {
@@ -912,7 +921,7 @@ body {
 }
 
 .card-body {
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 1rem 0;
 }
 
 .card-title {
@@ -1496,6 +1505,46 @@ body {
   font-weight: 500;
 }
 
+.card-tag-popover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: min(320px, calc(100vw - 1rem));
+  padding: 0.75rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: 1400;
+}
+
+.card-tag-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.card-tag-popover-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.card-tag-popover-body .tags-input-container {
+  padding: 0.5rem 0;
+  border: none;
+  min-height: 40px;
+}
+
+.card-tag-popover-body .tags-input-field {
+  min-width: 120px;
+}
+
+.card-tag-popover-body .tags-suggestions {
+  margin-top: 0.375rem;
+}
+
 @keyframes fadeIn {
   to {
     opacity: 1;
@@ -1762,7 +1811,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 0.375rem;
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 1rem 0;
 }
 
 .card-tags:empty {
