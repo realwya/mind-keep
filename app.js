@@ -105,6 +105,35 @@ function bindEvents() {
   // Type capsule filters
   initTypeCapsules();
 
+  // Global paste shortcut: route plain text to main note input when app is focused
+  document.addEventListener('paste', (e) => {
+    if (isNoteEditOpen() || isLinkEditOpen()) return;
+    if (isTextEditingTarget(e.target)) return;
+
+    const pastedText = e.clipboardData?.getData('text/plain') ?? '';
+    if (!pastedText) return;
+
+    e.preventDefault();
+
+    if (!isNoteFormOpen()) {
+      expandNoteForm();
+    }
+
+    const input = elements.noteContentInput;
+    if (!input) return;
+
+    input.focus();
+
+    const selectionStart = Number.isFinite(input.selectionStart) ? input.selectionStart : input.value.length;
+    const selectionEnd = Number.isFinite(input.selectionEnd) ? input.selectionEnd : selectionStart;
+    const nextValue = `${input.value.slice(0, selectionStart)}${pastedText}${input.value.slice(selectionEnd)}`;
+    const nextCursor = selectionStart + pastedText.length;
+
+    input.value = nextValue;
+    input.setSelectionRange(nextCursor, nextCursor);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+
   // Keyboard shortcuts
   document.addEventListener('keydown', async (e) => {
     // ESC closes sidebar
