@@ -263,7 +263,7 @@ async function init() {
     console.warn('DB error:', e);
   }
 
-  refreshFeatherIcons();
+  refreshLucideIcons();
 }
 
 // ===== 事件绑定 =====

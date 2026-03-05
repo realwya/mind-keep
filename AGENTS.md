@@ -36,7 +36,7 @@ bash tests/feather-icons.test.sh```
 - **Error handling**: Prefer `try/catch` with user-friendly `showPopup()` messages
 - **Async**: Use `async/await`, wrap IndexedDB in Promise-based API
 - **DOM**: Centralize element refs in `elements` object (in `config.js`), use event delegation
-- **Runtime dependencies**: Keep browser-side CDN/dynamic imports only (Marked, Feather, DOMPurify, optional CodeMirror modules), no npm packages
+- **Runtime dependencies**: Keep browser-side CDN/dynamic imports only (Marked, Lucide, DOMPurify, optional CodeMirror modules), no npm packages
 
 ### CSS (styles.css)
 
@@ -49,7 +49,7 @@ bash tests/feather-icons.test.sh```
 
 ### HTML (index.html)
 
-- **Icons**: Use Feather Icons (`<i data-feather="name">`), never inline SVG
+- **Icons**: Use Lucide Icons (`<i data-lucide="name">`), never inline SVG
 - **Accessibility**: Include `aria-label` on buttons, `aria-hidden` on icons
 - **Templates**: Use `<template>` elements for dynamic content
 - **Comments**: Chinese for structural comments
@@ -80,7 +80,7 @@ echo "PASS: description"
 
 Current checks in this repo:
 
-- `tests/feather-icons.test.sh`: Feather icon usage and no inline SVG
+- `tests/feather-icons.test.sh`: Lucide icon usage and no inline SVG
 - `tests/copy-markdown-action.test.sh`: Note-card copy markdown action wiring and clipboard feedback
 - `tests/archive-view.test.sh`: Archive view functionality logic
 - `tests/sidebar-collapse-toggle.test.sh`: Sidebar toggle interactions
@@ -116,7 +116,7 @@ Current checks in this repo:
 - **Interaction consistency**: Use shared `.card-actions .icon-button` hover/focus-visible behavior for background, transition, and focus ring
 - **Semantic color overrides**: Per-action differences should only override semantic vars such as `--action-hover-fg` (example: archive/restore), not duplicate full hover blocks
 - **Visibility by view state**: Keep action visibility controlled by view container classes (`.active-view`, `.archive-view`, `.trash-view`) rather than inline styles or JS-only style mutations
-- **Accessibility**: Every action button/link must include both `title` and `aria-label`, and keep Feather icon markup (`<i data-feather="...">`)
+- **Accessibility**: Every action button/link must include both `title` and `aria-label`, and keep Lucide icon markup (`<i data-lucide="...">`)
 
 ## Security
 
@@ -154,6 +154,6 @@ Condensed implementation notes migrated from the former `CLAUDE.md` (deduplicate
 ### External Services
 
 - Marked.js via CDN for Markdown rendering.
-- Feather Icons via CDN for icon replacement.
+- Lucide Icons via CDN for icon replacement.
 - Microlink API for link metadata extraction.
 - CodeMirror modules loaded lazily from `esm.sh` for note editing (fallback to `<textarea>` on load failure).

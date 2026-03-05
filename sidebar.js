@@ -73,9 +73,9 @@ function updateViewControls() {
   updateTrashActions();
 }
 
-function refreshFeatherIcons() {
-  if (window.feather && typeof window.feather.replace === 'function') {
-    window.feather.replace();
+function refreshLucideIcons() {
+  if (window.lucide && typeof window.lucide.createIcons === 'function') {
+    window.lucide.createIcons();
   }
 }
 
@@ -101,7 +101,7 @@ function renderSidebarFilters() {
 
   // Update active filter display
   updateActiveFilters();
-  refreshFeatherIcons();
+  refreshLucideIcons();
 }
 
 /**
@@ -119,7 +119,7 @@ function createFilterElement(filter, isSelected, onClick) {
   const checkbox = document.createElement('div');
   checkbox.className = 'tag-filter-checkbox';
   const icon = document.createElement('i');
-  icon.dataset.feather = 'check';
+  icon.dataset.lucide = 'check';
   icon.setAttribute('aria-hidden', 'true');
   checkbox.appendChild(icon);
 
@@ -353,7 +353,7 @@ function filterAndRenderItems() {
   elements.cardsGrid.innerHTML = '';
   filteredItems.forEach(item => renderOneItem(item, false));
   updateEmptyState();
-  refreshFeatherIcons();
+  refreshLucideIcons();
 }
 
 /**
@@ -369,8 +369,8 @@ function setSidebarActionButton(iconName, label) {
   if (!elements.closeSidebarBtn) return;
   elements.closeSidebarBtn.setAttribute('aria-label', label);
   elements.closeSidebarBtn.setAttribute('title', label);
-  elements.closeSidebarBtn.innerHTML = `<i data-feather="${iconName}" aria-hidden="true"></i>`;
-  refreshFeatherIcons();
+  elements.closeSidebarBtn.innerHTML = `<i data-lucide="${iconName}" aria-hidden="true"></i>`;
+  refreshLucideIcons();
 }
 
 function syncSidebarActionButton() {

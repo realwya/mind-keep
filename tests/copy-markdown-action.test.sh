@@ -6,8 +6,8 @@ if ! rg -q 'copy-markdown-button' index.html; then
   exit 1
 fi
 
-if ! rg -q 'data-feather="copy"' index.html; then
-  echo "FAIL: copy markdown action should use feather copy icon"
+if ! rg -q 'data-lucide="copy"' index.html; then
+  echo "FAIL: copy markdown action should use lucide copy icon"
   exit 1
 fi
 

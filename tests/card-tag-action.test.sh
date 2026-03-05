@@ -6,8 +6,8 @@ if ! rg -q 'class="icon-button tag-manage-button"' index.html; then
   exit 1
 fi
 
-if ! rg -q 'data-feather="tag"' index.html; then
-  echo "FAIL: tag manage action should use feather tag icon"
+if ! rg -q 'data-lucide="tag"' index.html; then
+  echo "FAIL: tag manage action should use lucide tag icon"
   exit 1
 fi
 

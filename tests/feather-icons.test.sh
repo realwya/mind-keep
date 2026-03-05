@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if ! rg -q "feather-icons" index.html; then
-  echo "FAIL: feather-icons library is not included in index.html"
+if ! rg -q "lucide" index.html; then
+  echo "FAIL: lucide library is not included in index.html"
   exit 1
 fi
 
-if ! rg -q "data-feather=\"" index.html; then
-  echo "FAIL: no data-feather icons found in index.html"
+if ! rg -q "data-lucide=\"" index.html; then
+  echo "FAIL: no data-lucide icons found in index.html"
   exit 1
 fi
 
@@ -21,4 +21,4 @@ if rg -q "<svg" app.js; then
   exit 1
 fi
 
-echo "PASS: Feather icon migration checks"
+echo "PASS: Lucide icon migration checks"

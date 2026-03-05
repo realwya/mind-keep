@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://platform.twitter.com">
   <link rel="preconnect" href="https://cdn.syndication.twimg.com">
   <link rel="preconnect" href="https://pbs.twimg.com">
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js" integrity="sha384-948ahk4ZmxYVYOc+rxN1H2gM1EJ2Duhp7uHtZ4WSLkV4Vtx5MUqnV+l7u9B+jFv+" crossorigin="anonymous"></script>
 </head>
@@ -21,12 +21,12 @@
   <aside id="tagSidebar" class="sidebar">
     <div class="sidebar-header">
       <div class="sidebar-branding">
-        <i data-feather="book-open" class="brand-icon" aria-hidden="true"></i>
+        <i data-lucide="book-open" class="brand-icon" aria-hidden="true"></i>
         <h1 class="brand-title">Mindkeep</h1>
       </div>
       <div class="sidebar-actions">
         <button id="closeSidebarBtn" class="icon-button sidebar-close" aria-label="Collapse sidebar" title="Collapse sidebar">
-          <i data-feather="chevrons-left" aria-hidden="true"></i>
+          <i data-lucide="chevrons-left" aria-hidden="true"></i>
         </button>
       </div>
     </div>
@@ -38,22 +38,22 @@
           <input id="searchInput" class="search-input" type="search" placeholder="Search..." autocomplete="off">
           <span class="search-shortcut">/</span>
           <button id="clearSearchBtn" class="search-clear-btn hidden" type="button" aria-label="Clear search">
-            <i data-feather="x" aria-hidden="true"></i>
+            <i data-lucide="x" aria-hidden="true"></i>
           </button>
         </div>
       </div>
 
       <nav class="view-switch">
         <button id="viewNotesBtn" class="view-switch-btn active" type="button" aria-label="Show notes view">
-          <i data-feather="file-text" aria-hidden="true"></i>
+          <i data-lucide="file-text" aria-hidden="true"></i>
           <span>Notes</span>
         </button>
         <button id="viewArchiveBtn" class="view-switch-btn" type="button" aria-label="Show archive view">
-          <i data-feather="archive" aria-hidden="true"></i>
+          <i data-lucide="archive" aria-hidden="true"></i>
           <span>Archive</span>
         </button>
         <button id="viewTrashBtn" class="view-switch-btn" type="button" aria-label="Show trash view">
-          <i data-feather="trash-2" aria-hidden="true"></i>
+          <i data-lucide="trash-2" aria-hidden="true"></i>
           <span>Trash</span>
         </button>
       </nav>
@@ -86,7 +86,7 @@
 
     <div class="sidebar-footer">
       <button id="changeFolderBtn" class="folder-button" title="Change folder" aria-label="Change folder">
-        <i data-feather="folder" aria-hidden="true"></i>
+        <i data-lucide="folder" aria-hidden="true"></i>
         <span id="folderName">No folder selected</span>
       </button>
     </div>
@@ -95,7 +95,7 @@
   <div class="app">
     <!-- 侧边栏切换按钮（移动端显示） -->
     <button id="sidebarToggleBtn" class="sidebar-toggle" aria-label="Toggle sidebar">
-      <i data-feather="menu" aria-hidden="true"></i>
+      <i data-lucide="menu" aria-hidden="true"></i>
     </button>
 
     <!-- 布局容器 -->
@@ -106,7 +106,7 @@
         <section id="folderPrompt" class="folder-prompt">
           <div class="prompt-content">
             <div class="prompt-icon">
-              <i data-feather="folder" aria-hidden="true"></i>
+              <i data-lucide="folder" aria-hidden="true"></i>
             </div>
             <h2>Choose a storage location</h2>
             <p>Select a local folder to store your notes and links.<br>Your data stays on your device.</p>
@@ -141,19 +141,19 @@
       <!-- 类型胶囊筛选 -->
       <div id="typeCapsules" class="type-capsules hidden">
         <button class="type-capsule" data-type="note" type="button" aria-label="Filter notes">
-          <i data-feather="file-text" aria-hidden="true"></i>
+          <i data-lucide="file-text" aria-hidden="true"></i>
           <span>Notes</span>
         </button>
         <button class="type-capsule" data-type="link" type="button" aria-label="Filter web pages">
-          <i data-feather="globe" aria-hidden="true"></i>
+          <i data-lucide="globe" aria-hidden="true"></i>
           <span>Links</span>
         </button>
         <button class="type-capsule" data-type="image" type="button" aria-label="Filter images">
-          <i data-feather="image" aria-hidden="true"></i>
+          <i data-lucide="image" aria-hidden="true"></i>
           <span>Images</span>
         </button>
         <button id="emptyTrashBtn" class="type-capsule empty-trash-capsule hidden" type="button" aria-label="Empty trash">
-          <i data-feather="trash-2" aria-hidden="true"></i>
+          <i data-lucide="trash-2" aria-hidden="true"></i>
           <span>Empty Trash</span>
         </button>
       </div>
@@ -162,7 +162,7 @@
       <section class="cards-section">
         <div id="cardsGrid" class="cards-grid"></div>
         <div id="emptyState" class="empty-state">
-          <i data-feather="file-text" aria-hidden="true"></i>
+          <i data-lucide="file-text" aria-hidden="true"></i>
           <p>Your links and notes will appear here</p>
         </div>
       </section>
@@ -180,29 +180,29 @@
       <div class="card-body">
         <h3 class="card-title"></h3>
         <span class="card-url">
-          <i data-feather="link-2" aria-hidden="true"></i>
+          <i data-lucide="link-2" aria-hidden="true"></i>
           <span class="url-text"></span>
         </span>
       </div>
       <div class="card-tags"></div>
       <div class="card-actions">
         <a class="icon-button open-link-button" href="#" target="_blank" rel="noopener noreferrer" title="Open link" aria-label="Open link">
-          <i data-feather="external-link" aria-hidden="true"></i>
+          <i data-lucide="external-link" aria-hidden="true"></i>
         </a>
         <button class="icon-button copy-link-button" title="Copy link" aria-label="Copy link">
-          <i data-feather="link" aria-hidden="true"></i>
+          <i data-lucide="link" aria-hidden="true"></i>
         </button>
         <button class="icon-button tag-manage-button" title="Manage tags" aria-label="Manage tags">
-          <i data-feather="tag" aria-hidden="true"></i>
+          <i data-lucide="tag" aria-hidden="true"></i>
         </button>
         <button class="icon-button archive-button" title="Archive" aria-label="Archive item">
-          <i data-feather="archive" aria-hidden="true"></i>
+          <i data-lucide="archive" aria-hidden="true"></i>
         </button>
         <button class="icon-button restore-button" title="Restore" aria-label="Restore item">
-          <i data-feather="rotate-ccw" aria-hidden="true"></i>
+          <i data-lucide="rotate-ccw" aria-hidden="true"></i>
         </button>
         <button class="icon-button delete-button" title="Delete" aria-label="Delete item">
-          <i data-feather="trash-2" aria-hidden="true"></i>
+          <i data-lucide="trash-2" aria-hidden="true"></i>
         </button>
       </div>
     </article>
@@ -229,19 +229,19 @@
       <div class="card-tags"></div>
       <div class="card-actions">
         <button class="icon-button copy-markdown-button" title="Copy markdown" aria-label="Copy markdown">
-          <i data-feather="copy" aria-hidden="true"></i>
+          <i data-lucide="copy" aria-hidden="true"></i>
         </button>
         <button class="icon-button tag-manage-button" title="Manage tags" aria-label="Manage tags">
-          <i data-feather="tag" aria-hidden="true"></i>
+          <i data-lucide="tag" aria-hidden="true"></i>
         </button>
         <button class="icon-button archive-button" title="Archive" aria-label="Archive item">
-          <i data-feather="archive" aria-hidden="true"></i>
+          <i data-lucide="archive" aria-hidden="true"></i>
         </button>
         <button class="icon-button restore-button" title="Restore" aria-label="Restore item">
-          <i data-feather="rotate-ccw" aria-hidden="true"></i>
+          <i data-lucide="rotate-ccw" aria-hidden="true"></i>
         </button>
         <button class="icon-button delete-button" title="Delete" aria-label="Delete item">
-          <i data-feather="trash-2" aria-hidden="true"></i>
+          <i data-lucide="trash-2" aria-hidden="true"></i>
         </button>
       </div>
     </article>
@@ -312,7 +312,7 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.2/dist/feather.min.js" integrity="sha384-qEqAs1VsN9WH2myXDbiP2wGGIttL9bMRZBKCl54ZnzpDlVqbYANP9vMaoT/wvQcf" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.3.1/dist/purify.min.js" integrity="sha384-80VlBZnyAwkkqtSfg5NhPyZff6nU4K/qniLBL8Jnm4KDv6jZhLiYtJbhglg/i9ww" crossorigin="anonymous"></script>
   <script src="config.js"></script>
   <script src="utils.js"></script>
