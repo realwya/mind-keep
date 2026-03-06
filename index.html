@@ -122,6 +122,7 @@
           <!-- 收起状态 -->
           <div id="addBoxCollapsed" class="add-box-collapsed">
             <span class="add-placeholder">Take a note...</span>
+            <span class="add-shortcut" aria-hidden="true">N</span>
           </div>
 
           <!-- 展开状态 - 笔记 -->
@@ -258,7 +259,10 @@
           <input type="text" id="editTitleInput" class="edit-title-input" placeholder="Title (optional)">
           <div class="title-error" id="editTitleError"></div>
         </div>
-        <div id="editTagsContainer" class="tags-input-container"></div>
+        <div class="form-group edit-tags-group">
+          <label for="editTagsInput">Tags</label>
+          <div id="editTagsContainer" class="tags-input-container"></div>
+        </div>
         <div id="editContentEditor" class="edit-codemirror hidden" aria-label="Edit note content"></div>
         <label for="editContentTextarea" class="sr-only">Note content</label>
         <textarea id="editContentTextarea" class="edit-textarea" placeholder="Edit note content..." spellcheck="false"></textarea>
@@ -278,10 +282,6 @@
     <div class="edit-modal-container">
       <div class="edit-modal-body">
         <form id="linkEditForm" class="link-edit-form">
-          <div class="link-cover-preview hidden" id="linkCoverPreview">
-            <img id="linkCoverPreviewImage" alt="Cover image preview">
-            <span id="linkCoverPreviewHint">Cover preview unavailable</span>
-          </div>
           <div class="form-group">
             <label for="linkEditTitle">Title</label>
             <input type="text" id="linkEditTitle" name="title" class="form-input">
@@ -298,13 +298,18 @@
             <label for="linkEditImage">Cover image</label>
             <input type="text" id="linkEditImage" name="image" class="form-input">
           </div>
-          <div class="form-group">
+          <div class="link-cover-preview hidden" id="linkCoverPreview">
+            <img id="linkCoverPreviewImage" alt="Cover image preview">
+            <span id="linkCoverPreviewHint">Cover preview unavailable</span>
+          </div>
+          <div class="form-group edit-tags-group">
             <label for="linkEditTags">Tags</label>
             <div id="linkEditTagsContainer" class="tags-input-container"></div>
           </div>
         </form>
       </div>
       <div class="edit-modal-footer">
+        <span class="edited-time">Edited -</span>
         <div class="edit-modal-actions">
           <button class="text-button primary btn-save-link-edit" type="button" aria-label="Save link edit">Save</button>
         </div>

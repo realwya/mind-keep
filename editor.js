@@ -201,6 +201,7 @@ function openLinkEditModal(item, data) {
   linkEditModal.form.description.value = data.description || '';
   linkEditModal.form.image.value = data.image || '';
   updateLinkCoverPreview(linkEditModal.form.image.value);
+  updateEditedTime(item.createdAt, linkEditModal.editedTime);
 
   // Populate tags
   const tags = data.tags ? data.tags.split(',').map(t => t.trim()) : [];
@@ -209,19 +210,24 @@ function openLinkEditModal(item, data) {
   linkEditModal.modal.classList.remove('hidden');
 }
 
+function setLinkCoverPreviewState(state, message = '') {
+  linkEditModal.coverPreview.classList.remove('is-loading', 'is-ready', 'is-error');
+  linkEditModal.coverPreview.classList.add(`is-${state}`);
+  linkEditModal.coverPreviewHint.textContent = message;
+}
+
 function updateLinkCoverPreview(imageUrl) {
   const trimmedUrl = (imageUrl || '').trim();
   if (!trimmedUrl) {
     linkEditModal.coverPreview.classList.add('hidden');
+    linkEditModal.coverPreview.classList.remove('is-loading', 'is-ready', 'is-error');
     linkEditModal.coverPreviewImage.removeAttribute('src');
     linkEditModal.coverPreviewHint.textContent = 'Cover preview unavailable';
-    linkEditModal.coverPreviewHint.classList.add('hidden');
     return;
   }
 
   linkEditModal.coverPreview.classList.remove('hidden');
-  linkEditModal.coverPreviewHint.textContent = 'Loading preview...';
-  linkEditModal.coverPreviewHint.classList.remove('hidden');
+  setLinkCoverPreviewState('loading', 'Loading preview...');
   linkEditModal.coverPreviewImage.src = trimmedUrl;
 }
 
@@ -394,8 +400,8 @@ function formatEditedTime(timestamp) {
   return `Edited ${year}-${month}-${day}`;
 }
 
-function updateEditedTime(timestamp) {
-  editModal.editedTime.textContent = formatEditedTime(timestamp);
+function updateEditedTime(timestamp, target = editModal.editedTime) {
+  target.textContent = formatEditedTime(timestamp);
 }
 
 // Bind edit modal events
@@ -428,13 +434,11 @@ function bindLinkEditModalEvents() {
   });
 
   linkEditModal.coverPreviewImage.addEventListener('load', () => {
-    linkEditModal.coverPreviewHint.textContent = '';
-    linkEditModal.coverPreviewHint.classList.add('hidden');
+    setLinkCoverPreviewState('ready');
   });
 
   linkEditModal.coverPreviewImage.addEventListener('error', () => {
-    linkEditModal.coverPreviewHint.textContent = 'Cover preview unavailable';
-    linkEditModal.coverPreviewHint.classList.remove('hidden');
+    setLinkCoverPreviewState('error', 'Cover preview unavailable');
   });
 
   linkEditModal.saveBtn.addEventListener('click', async () => {
@@ -522,10 +526,12 @@ async function saveLinkEdit() {
 
     // 2. Update in-memory state
     const index = items.findIndex(i => i.id === currentEditingItem.id);
+    const savedAt = Date.now();
     if (index !== -1) {
       items[index].content = content;
-      items[index].createdAt = Date.now();
+      items[index].createdAt = savedAt;
     }
+    updateEditedTime(savedAt, linkEditModal.editedTime);
 
     // 3. Update UI (full card replacement for correct styling on type change)
     const card = document.querySelector(`.card[data-id="${currentEditingItem.id}"]`);

@@ -124,7 +124,7 @@ const editModal = {
   titleInput: document.getElementById('editTitleInput'),
   titleError: document.getElementById('editTitleError'),
   tagsContainer: document.getElementById('editTagsContainer'),
-  editedTime: document.querySelector('.edited-time'),
+  editedTime: document.querySelector('#editModal .edited-time'),
   saveBtn: document.querySelector('.btn-save-edit'),
   backdrop: document.querySelector('.edit-modal-backdrop')
 };
@@ -137,6 +137,7 @@ const linkEditModal = {
   coverPreviewImage: document.getElementById('linkCoverPreviewImage'),
   coverPreviewHint: document.getElementById('linkCoverPreviewHint'),
   tagsContainer: document.getElementById('linkEditTagsContainer'),
+  editedTime: document.querySelector('#linkEditModal .edited-time'),
   saveBtn: document.querySelector('.btn-save-link-edit'),
   backdrop: document.querySelector('#linkEditModal .edit-modal-backdrop')
 };

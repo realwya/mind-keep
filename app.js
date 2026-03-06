@@ -234,11 +234,13 @@ async function init() {
   // Initialize TagsInput components
   editTagsInput = new TagsInput(editModal.tagsContainer, {
     enableSuggestions: true,
+    inputId: 'editTagsInput',
     matchMode: 'includes',
     suggestionsProvider: () => allTags.map(t => t.name)
   });
   linkEditTagsInput = new TagsInput(linkEditModal.tagsContainer, {
     enableSuggestions: true,
+    inputId: 'linkEditTags',
     matchMode: 'includes',
     suggestionsProvider: () => allTags.map(t => t.name)
   });

@@ -3,6 +3,7 @@ class TagsInput {
   constructor(container, options = {}) {
     this.tags = [];
     this.container = container;
+    this.options = options;
     this.placeholder = options.placeholder || 'Add tag (press Enter)';
     this.maxTags = options.maxTags || Infinity;
     this.onChange = options.onChange || (() => {});
@@ -24,6 +25,7 @@ class TagsInput {
     this.input = document.createElement('input');
     this.input.type = 'text';
     this.input.className = 'tags-input-field';
+    this.input.id = this.options.inputId || '';
     this.input.placeholder = this.placeholder;
     this.container.appendChild(this.input);
 
