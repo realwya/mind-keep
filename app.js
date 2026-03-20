@@ -280,9 +280,6 @@ function bindEvents() {
   // Click collapsed input to expand note form
   elements.addBoxCollapsed.addEventListener('click', expandNoteForm);
 
-  // Close form
-  elements.closeNoteForm.addEventListener('click', collapseForm);
-
   // Submit form
   elements.noteForm.addEventListener('submit', handleNoteSubmit);
   elements.noteContentInput.addEventListener('input', autoResizeNoteContentInput);

@@ -78,7 +78,6 @@ const elements = {
 
   // Note input
   noteContentInput: document.getElementById('noteContentInput'),
-  closeNoteForm: document.getElementById('closeNoteForm'),
   saveNoteBtn: document.getElementById('saveNoteBtn'),
 
   // Type capsule filters
