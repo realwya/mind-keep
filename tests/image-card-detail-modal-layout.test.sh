@@ -16,6 +16,11 @@ if ! rg -q 'class="link-edit-sidebar-pane"' index.html; then
   exit 1
 fi
 
+if rg -q 'link-edit-sidebar-pane-secondary' index.html; then
+  echo "FAIL: link edit modal should not split the sidebar into a secondary pane"
+  exit 1
+fi
+
 if ! rg -q "const isImageItem = data.type === 'images';" editor.js; then
   echo "FAIL: image items should be detected when opening the link edit modal"
   exit 1
@@ -48,6 +53,16 @@ fi
 
 if ! rg -Fq '.image-detail-layout .link-edit-sidebar-pane {' styles.css; then
   echo "FAIL: image modal should define a scrollable sidebar pane"
+  exit 1
+fi
+
+if ! rg -Fq 'grid-template-rows: auto auto auto auto minmax(0, 1fr);' styles.css; then
+  echo "FAIL: image modal sidebar should reserve a trailing flexible row for full-height media"
+  exit 1
+fi
+
+if rg -Fq '.image-detail-layout .link-edit-sidebar-pane-secondary' styles.css; then
+  echo "FAIL: image modal should not define a secondary sidebar pane layout"
   exit 1
 fi
 
