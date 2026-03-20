@@ -24,6 +24,7 @@ bash tests/*.test.sh
 
 # Run single test
 bash tests/feather-icons.test.sh
+bash tests/link-metadata-fallback.test.sh
 
 # Review targeted changes
 git diff -- path/to/file
@@ -98,6 +99,8 @@ Current checks in this repo:
 - `tests/card-tag-action.test.sh` and `tests/edit-modal-tags-layout.test.sh`: Tag action and edit modal tag layout behavior
 - `tests/sidebar-control-height.test.sh`, `tests/sidebar-empty-tags-state.test.sh`, and `tests/sidebar-shortcut.test.sh`: Sidebar sizing, empty state, and shortcuts
 - `tests/link-cover-preview-position.test.sh`, `tests/link-cover-preview-contain-layout.test.sh`, and `tests/link-cover-preview-stability.test.sh`: Link cover preview layout behavior
+- `tests/link-card-open-action.test.sh`, `tests/link-card-url-style.test.sh`, and `tests/link-metadata-fallback.test.sh`: Link card actions, URL presentation, and metadata fallback behavior
+- `tests/image-link-card-overlay-actions.test.sh` and `tests/image-card-detail-modal-layout.test.sh`: Image/link card overlay actions and image detail modal layout behavior
 - `tests/x-post-type.test.sh`, `tests/x-post-capsule-icon.test.sh`, `tests/x-post-skeleton-structure.test.sh`, and `tests/x-post-load-performance.test.sh`: X post rendering and filter behavior
 - `tests/type-migration-all-views.test.sh`, `tests/card-image-layout.test.sh`, `tests/card-render-cache.test.sh`, `tests/editor-modal-stability.test.sh`, and `tests/markdown-list-continue.test.sh`: View migration, rendering, editor stability, and markdown continuation
 
