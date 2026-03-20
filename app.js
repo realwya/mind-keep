@@ -428,6 +428,10 @@ function bindEvents() {
       !isLinkEditOpen()
     ) {
       e.preventDefault();
+      if (elements.sidebar.classList.contains('collapsed')) {
+        elements.sidebar.classList.remove('collapsed');
+        syncSidebarActionButton();
+      }
       if (!elements.sidebar.classList.contains('open') && window.innerWidth <= 1024) {
         elements.sidebar.classList.add('open');
         showSidebarOverlay();
