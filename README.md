@@ -7,8 +7,6 @@ Mindkeep is a lightweight note and bookmark app built with plain HTML, CSS, and 
 - Create and edit notes, links, and image entries
 - Store everything as local Markdown files
 - Browse content with search, type filters, and tag filters
-- Move items to Archive or Trash instead of deleting permanently
-- Render Markdown cards with interactive task checkboxes
 - Fetch link metadata for richer link previews
 
 ## Tech Stack
