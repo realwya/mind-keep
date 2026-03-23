@@ -1,341 +1,559 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mindkeep</title>
+    <meta
+      name="description"
+      content="Capture links and notes like Google Keep"
+    />
+    <link rel="icon" type="image/svg+xml" href="assets/mindkeep-logo.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://platform.twitter.com" />
+    <link rel="preconnect" href="https://cdn.syndication.twimg.com" />
+    <link rel="preconnect" href="https://pbs.twimg.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script
+      src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js"
+      integrity="sha384-948ahk4ZmxYVYOc+rxN1H2gM1EJ2Duhp7uHtZ4WSLkV4Vtx5MUqnV+l7u9B+jFv+"
+      crossorigin="anonymous"
+    ></script>
+  </head>
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mindkeep</title>
-  <meta name="description" content="Capture links and notes like Google Keep">
-  <link rel="icon" type="image/svg+xml" href="assets/mindkeep-logo.svg">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://platform.twitter.com">
-  <link rel="preconnect" href="https://cdn.syndication.twimg.com">
-  <link rel="preconnect" href="https://pbs.twimg.com">
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
-  <script src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js" integrity="sha384-948ahk4ZmxYVYOc+rxN1H2gM1EJ2Duhp7uHtZ4WSLkV4Vtx5MUqnV+l7u9B+jFv+" crossorigin="anonymous"></script>
-</head>
-
-<body>
-  <!-- 标签筛选侧边栏 -->
-  <aside id="tagSidebar" class="sidebar">
-    <div class="sidebar-header">
-      <div class="sidebar-branding">
-        <img src="assets/mindkeep-logo.svg" class="brand-logo" alt="Mindkeep logo">
-        <h1 class="brand-title">Mindkeep</h1>
-      </div>
-      <div class="sidebar-actions">
-        <button id="closeSidebarBtn" class="icon-button sidebar-close" aria-label="Collapse sidebar" title="Collapse sidebar">
-          <i data-lucide="chevrons-left" aria-hidden="true"></i>
-        </button>
-      </div>
-    </div>
-
-    <div class="sidebar-content">
-      <div class="sidebar-search">
-        <label class="search-label" for="searchInput">Search</label>
-        <div class="search-input-wrap">
-          <input id="searchInput" class="search-input" type="search" placeholder="Search..." autocomplete="off">
-          <span class="search-shortcut">/</span>
-          <button id="clearSearchBtn" class="search-clear-btn hidden" type="button" aria-label="Clear search">
-            <i data-lucide="x" aria-hidden="true"></i>
+  <body>
+    <!-- 标签筛选侧边栏 -->
+    <aside id="tagSidebar" class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-branding">
+          <img
+            src="assets/mindkeep-logo.svg"
+            class="brand-logo"
+            alt="Mindkeep logo"
+          />
+          <h1 class="brand-title">Mindkeep</h1>
+        </div>
+        <div class="sidebar-actions">
+          <button
+            id="closeSidebarBtn"
+            class="icon-button sidebar-close"
+            aria-label="Collapse sidebar"
+            title="Collapse sidebar"
+          >
+            <i data-lucide="chevrons-left" aria-hidden="true"></i>
           </button>
         </div>
       </div>
 
-      <nav class="view-switch">
-        <button id="viewNotesBtn" class="view-switch-btn active" type="button" aria-label="Show notes view">
-          <i data-lucide="file-text" aria-hidden="true"></i>
-          <span>Notes</span>
-        </button>
-        <button id="viewArchiveBtn" class="view-switch-btn" type="button" aria-label="Show archive view">
-          <i data-lucide="archive" aria-hidden="true"></i>
-          <span>Archive</span>
-        </button>
-        <button id="viewTrashBtn" class="view-switch-btn" type="button" aria-label="Show trash view">
-          <i data-lucide="trash-2" aria-hidden="true"></i>
-          <span>Trash</span>
-        </button>
-      </nav>
-
-      <!-- 已选筛选显示区域 -->
-      <div id="activeFilters" class="active-filters hidden">
-        <div class="active-filters-header">
-          <span class="active-filters-label">Selected Filters</span>
-          <button id="clearAllFilters" class="text-button clear-filters-btn" type="button" aria-label="Clear all filters">Clear all</button>
+      <div class="sidebar-content">
+        <div class="sidebar-search">
+          <label class="search-label" for="searchInput">Search</label>
+          <div class="search-input-wrap">
+            <input
+              id="searchInput"
+              class="search-input"
+              type="search"
+              placeholder="Search..."
+              autocomplete="off"
+            />
+            <span class="search-shortcut">/</span>
+            <button
+              id="clearSearchBtn"
+              class="search-clear-btn hidden"
+              type="button"
+              aria-label="Clear search"
+            >
+              <i data-lucide="x" aria-hidden="true"></i>
+            </button>
+          </div>
         </div>
-        <div id="activeFiltersList" class="active-filters-list"></div>
+
+        <nav class="view-switch">
+          <button
+            id="viewNotesBtn"
+            class="view-switch-btn active"
+            type="button"
+            aria-label="Show notes view"
+          >
+            <i data-lucide="file-text" aria-hidden="true"></i>
+            <span>Notes</span>
+          </button>
+          <button
+            id="viewArchiveBtn"
+            class="view-switch-btn"
+            type="button"
+            aria-label="Show archive view"
+          >
+            <i data-lucide="archive" aria-hidden="true"></i>
+            <span>Archive</span>
+          </button>
+          <button
+            id="viewTrashBtn"
+            class="view-switch-btn"
+            type="button"
+            aria-label="Show trash view"
+          >
+            <i data-lucide="trash-2" aria-hidden="true"></i>
+            <span>Trash</span>
+          </button>
+        </nav>
+
+        <!-- 已选筛选显示区域 -->
+        <div id="activeFilters" class="active-filters hidden">
+          <div class="active-filters-header">
+            <span class="active-filters-label">Selected Filters</span>
+            <button
+              id="clearAllFilters"
+              class="text-button clear-filters-btn"
+              type="button"
+              aria-label="Clear all filters"
+            >
+              Clear all
+            </button>
+          </div>
+          <div id="activeFiltersList" class="active-filters-list"></div>
+        </div>
+
+        <!-- 标签筛选区域 -->
+        <div id="tagsSection" class="tags-section hidden">
+          <div class="tags-section-header">
+            <span class="tags-section-label">Tags</span>
+          </div>
+          <div id="tagsList" class="filter-list tags-list"></div>
+          <p id="tagsEmptyState" class="tags-empty-state hidden">
+            No tags found
+          </p>
+        </div>
+
+        <!-- 空状态 -->
+        <div id="noTagsState" class="no-tags-state hidden">
+          <p>No filters available</p>
+          <span class="text-muted"
+            >Types and tags will appear after you add notes or links</span
+          >
+        </div>
       </div>
 
-      <!-- 标签筛选区域 -->
-      <div id="tagsSection" class="tags-section hidden">
-        <div class="tags-section-header">
-          <span class="tags-section-label">Tags</span>
-        </div>
-        <div id="tagsList" class="filter-list tags-list">
-        </div>
-        <p id="tagsEmptyState" class="tags-empty-state hidden">No tags found</p>
+      <div class="sidebar-footer">
+        <button
+          id="changeFolderBtn"
+          class="folder-button"
+          title="Change folder"
+          aria-label="Change folder"
+        >
+          <i data-lucide="folder" aria-hidden="true"></i>
+          <span id="folderName">No folder selected</span>
+        </button>
       </div>
+    </aside>
 
-      <!-- 空状态 -->
-      <div id="noTagsState" class="no-tags-state hidden">
-        <p>No filters available</p>
-        <span class="text-muted">Types and tags will appear after you add notes or links</span>
-      </div>
-    </div>
-
-    <div class="sidebar-footer">
-      <button id="changeFolderBtn" class="folder-button" title="Change folder" aria-label="Change folder">
-        <i data-lucide="folder" aria-hidden="true"></i>
-        <span id="folderName">No folder selected</span>
+    <div class="app">
+      <!-- 侧边栏切换按钮（移动端显示） -->
+      <button
+        id="sidebarToggleBtn"
+        class="sidebar-toggle"
+        aria-label="Toggle sidebar"
+      >
+        <i data-lucide="menu" aria-hidden="true"></i>
       </button>
-    </div>
-  </aside>
 
-  <div class="app">
-    <!-- 侧边栏切换按钮（移动端显示） -->
-    <button id="sidebarToggleBtn" class="sidebar-toggle" aria-label="Toggle sidebar">
-      <i data-lucide="menu" aria-hidden="true"></i>
-    </button>
-
-    <!-- 布局容器 -->
-    <div class="app-layout">
-      <!-- 主内容包装器 -->
-      <div class="main-wrapper">
-        <!-- 文件夹选择引导 -->
-        <section id="folderPrompt" class="folder-prompt">
-          <div class="prompt-content">
-            <div class="prompt-icon">
-              <i data-lucide="folder" aria-hidden="true"></i>
+      <!-- 布局容器 -->
+      <div class="app-layout">
+        <!-- 主内容包装器 -->
+        <div class="main-wrapper">
+          <!-- 文件夹选择引导 -->
+          <section id="folderPrompt" class="folder-prompt">
+            <div class="prompt-content">
+              <div class="prompt-icon">
+                <i data-lucide="folder" aria-hidden="true"></i>
+              </div>
+              <h2>Choose a storage location</h2>
+              <p>
+                Select a local folder to store your notes.<br />Your data stays
+                on your device.
+              </p>
+              <button
+                id="openFolderBtn"
+                class="primary-button"
+                type="button"
+                aria-label="Open folder"
+              >
+                Open folder
+              </button>
             </div>
-            <h2>Choose a storage location</h2>
-            <p>Select a local folder to store your notes and links.<br>Your data stays on your device.</p>
-            <button id="openFolderBtn" class="primary-button" type="button" aria-label="Open folder">Open folder</button>
-          </div>
-        </section>
+          </section>
 
-    <!-- 主内容区域 (默认隐藏，选择文件夹后显示) -->
-    <main id="mainContent" class="hidden">
-      <!-- 添加输入区域 - Google Keep 风格 -->
-      <section class="add-section">
-        <div id="addBox" class="add-box">
-          <!-- 收起状态 -->
-          <div id="addBoxCollapsed" class="add-box-collapsed">
-            <span class="add-placeholder">Take a note...</span>
-            <span class="add-shortcut" aria-hidden="true">N</span>
-          </div>
+          <!-- 主内容区域 (默认隐藏，选择文件夹后显示) -->
+          <main id="mainContent" class="hidden">
+            <!-- 添加输入区域 - Google Keep 风格 -->
+            <section class="add-section">
+              <div id="addBox" class="add-box">
+                <!-- 收起状态 -->
+                <div id="addBoxCollapsed" class="add-box-collapsed">
+                  <span class="add-placeholder">Take a note...</span>
+                  <span class="add-shortcut" aria-hidden="true">N</span>
+                </div>
 
-          <!-- 展开状态 - 笔记 -->
-          <form id="noteForm" class="add-box-expanded hidden">
-            <label for="noteContentInput" class="sr-only">Note content</label>
-            <textarea id="noteContentInput" class="content-input" placeholder="Write something..." rows="3"></textarea>
-            <div class="add-box-actions">
-              <div class="action-buttons">
-                <button type="button" class="text-button" id="closeNoteForm" aria-label="Close note form">Close</button>
-                <button type="submit" class="text-button primary" id="saveNoteBtn" aria-label="Save note">Save</button>
+                <!-- 展开状态 - 笔记 -->
+                <form id="noteForm" class="add-box-expanded hidden">
+                  <label for="noteContentInput" class="sr-only"
+                    >Note content</label
+                  >
+                  <textarea
+                    id="noteContentInput"
+                    class="content-input"
+                    placeholder="Write something..."
+                    rows="3"
+                  ></textarea>
+                  <div class="add-box-actions">
+                    <div class="action-buttons">
+                      <button
+                        type="button"
+                        class="text-button"
+                        id="closeNoteForm"
+                        aria-label="Close note form"
+                      >
+                        Close
+                      </button>
+                      <button
+                        type="submit"
+                        class="text-button primary"
+                        id="saveNoteBtn"
+                        aria-label="Save note"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </section>
+
+            <!-- 类型胶囊筛选 -->
+            <div id="typeCapsules" class="type-capsules hidden">
+              <button
+                class="type-capsule"
+                data-type="notes"
+                type="button"
+                aria-label="Filter notes"
+              >
+                <i data-lucide="file-text" aria-hidden="true"></i>
+                <span>Notes</span>
+              </button>
+              <button
+                class="type-capsule"
+                data-type="links"
+                type="button"
+                aria-label="Filter web pages"
+              >
+                <i data-lucide="globe" aria-hidden="true"></i>
+                <span>Links</span>
+              </button>
+              <button
+                class="type-capsule"
+                data-type="x-posts"
+                type="button"
+                aria-label="Filter X posts"
+              >
+                <i data-lucide="twitter" aria-hidden="true"></i>
+                <span>X posts</span>
+              </button>
+              <button
+                class="type-capsule"
+                data-type="images"
+                type="button"
+                aria-label="Filter images"
+              >
+                <i data-lucide="image" aria-hidden="true"></i>
+                <span>Images</span>
+              </button>
+              <button
+                id="emptyTrashBtn"
+                class="type-capsule empty-trash-capsule hidden"
+                type="button"
+                aria-label="Empty trash"
+              >
+                <i data-lucide="trash-2" aria-hidden="true"></i>
+                <span>Empty Trash</span>
+              </button>
+            </div>
+
+            <!-- 卡片网格 - 瀑布流 -->
+            <section class="cards-section">
+              <div id="cardsGrid" class="cards-grid"></div>
+              <div id="emptyState" class="empty-state">
+                <i data-lucide="file-text" aria-hidden="true"></i>
+                <p>Your links and notes will appear here</p>
+              </div>
+            </section>
+          </main>
+        </div>
+      </div>
+    </div>
+
+    <!-- 链接卡片模板 -->
+    <template id="linkCardTemplate">
+      <article class="card link-card">
+        <div class="card-image">
+          <img src="" alt="" loading="lazy" />
+        </div>
+        <div class="card-body">
+          <h3 class="card-title"></h3>
+          <span class="card-url">
+            <span class="url-text"></span>
+          </span>
+        </div>
+        <div class="card-tags"></div>
+        <div class="card-actions">
+          <button
+            class="icon-button copy-link-button"
+            title="Copy link"
+            aria-label="Copy link"
+          >
+            <i data-lucide="link" aria-hidden="true"></i>
+          </button>
+          <button
+            class="icon-button tag-manage-button"
+            title="Manage tags"
+            aria-label="Manage tags"
+          >
+            <i data-lucide="tag" aria-hidden="true"></i>
+          </button>
+          <button
+            class="icon-button archive-button"
+            title="Archive"
+            aria-label="Archive item"
+          >
+            <i data-lucide="archive" aria-hidden="true"></i>
+          </button>
+          <button
+            class="icon-button restore-button"
+            title="Restore"
+            aria-label="Restore item"
+          >
+            <i data-lucide="rotate-ccw" aria-hidden="true"></i>
+          </button>
+          <button
+            class="icon-button delete-button"
+            title="Delete"
+            aria-label="Delete item"
+          >
+            <i data-lucide="trash-2" aria-hidden="true"></i>
+          </button>
+        </div>
+      </article>
+    </template>
+
+    <!-- 链接加载中模板 -->
+    <template id="linkLoadingTemplate">
+      <article class="card link-card loading">
+        <div class="card-image skeleton"></div>
+        <div class="card-body">
+          <div class="card-title skeleton"></div>
+          <div class="card-url skeleton"></div>
+        </div>
+      </article>
+    </template>
+
+    <!-- 笔记卡片模板 -->
+    <template id="noteCardTemplate">
+      <article class="card note-card">
+        <div class="card-body">
+          <h3 class="card-title note-title"></h3>
+          <div class="note-content"></div>
+        </div>
+        <div class="card-tags"></div>
+        <div class="card-actions">
+          <button
+            class="icon-button copy-markdown-button"
+            title="Copy markdown"
+            aria-label="Copy markdown"
+          >
+            <i data-lucide="copy" aria-hidden="true"></i>
+          </button>
+          <button
+            class="icon-button tag-manage-button"
+            title="Manage tags"
+            aria-label="Manage tags"
+          >
+            <i data-lucide="tag" aria-hidden="true"></i>
+          </button>
+          <button
+            class="icon-button archive-button"
+            title="Archive"
+            aria-label="Archive item"
+          >
+            <i data-lucide="archive" aria-hidden="true"></i>
+          </button>
+          <button
+            class="icon-button restore-button"
+            title="Restore"
+            aria-label="Restore item"
+          >
+            <i data-lucide="rotate-ccw" aria-hidden="true"></i>
+          </button>
+          <button
+            class="icon-button delete-button"
+            title="Delete"
+            aria-label="Delete item"
+          >
+            <i data-lucide="trash-2" aria-hidden="true"></i>
+          </button>
+        </div>
+      </article>
+    </template>
+
+    <!-- 编辑弹窗 -->
+    <div id="editModal" class="edit-modal hidden">
+      <div class="edit-modal-backdrop"></div>
+      <div class="edit-modal-container">
+        <div class="edit-modal-body">
+          <!-- 标题输入区域 -->
+          <div class="edit-title-section">
+            <label for="editTitleInput" class="sr-only">Note title</label>
+            <input
+              type="text"
+              id="editTitleInput"
+              class="edit-title-input"
+              placeholder="Title (optional)"
+            />
+            <div class="title-error" id="editTitleError"></div>
+          </div>
+          <div class="form-group edit-tags-group">
+            <label for="editTagsInput">Tags</label>
+            <div id="editTagsContainer" class="tags-input-container"></div>
+          </div>
+          <div
+            id="editContentEditor"
+            class="edit-codemirror hidden"
+            aria-label="Edit note content"
+          ></div>
+          <label for="editContentTextarea" class="sr-only">Note content</label>
+          <textarea
+            id="editContentTextarea"
+            class="edit-textarea"
+            placeholder="Edit note content..."
+            spellcheck="false"
+          ></textarea>
+        </div>
+        <div class="edit-modal-footer">
+          <span class="edited-time">Edited -</span>
+          <div class="edit-modal-actions">
+            <button
+              class="text-button primary btn-save-edit"
+              type="button"
+              aria-label="Save note edit"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 链接编辑弹窗 -->
+    <div id="linkEditModal" class="edit-modal hidden">
+      <div class="edit-modal-backdrop"></div>
+      <div class="edit-modal-container">
+        <div class="edit-modal-body">
+          <form id="linkEditForm" class="link-edit-form">
+            <div class="link-edit-layout">
+              <div class="link-edit-sidebar-pane">
+                <div class="form-group link-edit-title-group">
+                  <label for="linkEditTitle">Title</label>
+                  <input
+                    type="text"
+                    id="linkEditTitle"
+                    name="title"
+                    class="form-input"
+                  />
+                </div>
+                <div class="form-group link-edit-url-group">
+                  <label for="linkEditUrl">Link</label>
+                  <input
+                    type="url"
+                    id="linkEditUrl"
+                    name="url"
+                    class="form-input"
+                  />
+                </div>
+                <div class="form-group link-edit-description-group">
+                  <label for="linkEditDescription">Description</label>
+                  <textarea
+                    id="linkEditDescription"
+                    name="description"
+                    class="form-textarea"
+                    rows="2"
+                  ></textarea>
+                </div>
+                <div
+                  id="linkEditImageGroup"
+                  class="form-group link-edit-cover-group"
+                >
+                  <label for="linkEditImage">Cover image</label>
+                  <input
+                    type="text"
+                    id="linkEditImage"
+                    name="image"
+                    class="form-input"
+                  />
+                </div>
+              </div>
+              <div class="link-edit-media-pane">
+                <div class="link-cover-preview hidden" id="linkCoverPreview">
+                  <img id="linkCoverPreviewImage" alt="Cover image preview" />
+                  <span id="linkCoverPreviewHint"
+                    >Cover preview unavailable</span
+                  >
+                </div>
+              </div>
+              <div
+                class="link-edit-sidebar-pane link-edit-sidebar-pane-secondary"
+              >
+                <div class="form-group edit-tags-group link-edit-tags-group">
+                  <label for="linkEditTags">Tags</label>
+                  <div
+                    id="linkEditTagsContainer"
+                    class="tags-input-container"
+                  ></div>
+                </div>
               </div>
             </div>
           </form>
         </div>
-      </section>
-
-      <!-- 类型胶囊筛选 -->
-      <div id="typeCapsules" class="type-capsules hidden">
-        <button class="type-capsule" data-type="notes" type="button" aria-label="Filter notes">
-          <i data-lucide="file-text" aria-hidden="true"></i>
-          <span>Notes</span>
-        </button>
-        <button class="type-capsule" data-type="links" type="button" aria-label="Filter web pages">
-          <i data-lucide="globe" aria-hidden="true"></i>
-          <span>Links</span>
-        </button>
-        <button class="type-capsule" data-type="x-posts" type="button" aria-label="Filter X posts">
-          <i data-lucide="twitter" aria-hidden="true"></i>
-          <span>X posts</span>
-        </button>
-        <button class="type-capsule" data-type="images" type="button" aria-label="Filter images">
-          <i data-lucide="image" aria-hidden="true"></i>
-          <span>Images</span>
-        </button>
-        <button id="emptyTrashBtn" class="type-capsule empty-trash-capsule hidden" type="button" aria-label="Empty trash">
-          <i data-lucide="trash-2" aria-hidden="true"></i>
-          <span>Empty Trash</span>
-        </button>
-      </div>
-
-      <!-- 卡片网格 - 瀑布流 -->
-      <section class="cards-section">
-        <div id="cardsGrid" class="cards-grid"></div>
-        <div id="emptyState" class="empty-state">
-          <i data-lucide="file-text" aria-hidden="true"></i>
-          <p>Your links and notes will appear here</p>
-        </div>
-      </section>
-    </main>
-      </div>
-    </div>
-  </div>
-
-  <!-- 链接卡片模板 -->
-  <template id="linkCardTemplate">
-    <article class="card link-card">
-      <div class="card-image">
-        <img src="" alt="" loading="lazy">
-      </div>
-      <div class="card-body">
-        <h3 class="card-title"></h3>
-        <span class="card-url">
-          <span class="url-text"></span>
-        </span>
-      </div>
-      <div class="card-tags"></div>
-      <div class="card-actions">
-        <button class="icon-button copy-link-button" title="Copy link" aria-label="Copy link">
-          <i data-lucide="link" aria-hidden="true"></i>
-        </button>
-        <button class="icon-button tag-manage-button" title="Manage tags" aria-label="Manage tags">
-          <i data-lucide="tag" aria-hidden="true"></i>
-        </button>
-        <button class="icon-button archive-button" title="Archive" aria-label="Archive item">
-          <i data-lucide="archive" aria-hidden="true"></i>
-        </button>
-        <button class="icon-button restore-button" title="Restore" aria-label="Restore item">
-          <i data-lucide="rotate-ccw" aria-hidden="true"></i>
-        </button>
-        <button class="icon-button delete-button" title="Delete" aria-label="Delete item">
-          <i data-lucide="trash-2" aria-hidden="true"></i>
-        </button>
-      </div>
-    </article>
-  </template>
-
-  <!-- 链接加载中模板 -->
-  <template id="linkLoadingTemplate">
-    <article class="card link-card loading">
-      <div class="card-image skeleton"></div>
-      <div class="card-body">
-        <div class="card-title skeleton"></div>
-        <div class="card-url skeleton"></div>
-      </div>
-    </article>
-  </template>
-
-  <!-- 笔记卡片模板 -->
-  <template id="noteCardTemplate">
-    <article class="card note-card">
-      <div class="card-body">
-        <h3 class="card-title note-title"></h3>
-        <div class="note-content"></div>
-      </div>
-      <div class="card-tags"></div>
-      <div class="card-actions">
-        <button class="icon-button copy-markdown-button" title="Copy markdown" aria-label="Copy markdown">
-          <i data-lucide="copy" aria-hidden="true"></i>
-        </button>
-        <button class="icon-button tag-manage-button" title="Manage tags" aria-label="Manage tags">
-          <i data-lucide="tag" aria-hidden="true"></i>
-        </button>
-        <button class="icon-button archive-button" title="Archive" aria-label="Archive item">
-          <i data-lucide="archive" aria-hidden="true"></i>
-        </button>
-        <button class="icon-button restore-button" title="Restore" aria-label="Restore item">
-          <i data-lucide="rotate-ccw" aria-hidden="true"></i>
-        </button>
-        <button class="icon-button delete-button" title="Delete" aria-label="Delete item">
-          <i data-lucide="trash-2" aria-hidden="true"></i>
-        </button>
-      </div>
-    </article>
-  </template>
-
-  <!-- 编辑弹窗 -->
-  <div id="editModal" class="edit-modal hidden">
-    <div class="edit-modal-backdrop"></div>
-    <div class="edit-modal-container">
-      <div class="edit-modal-body">
-        <!-- 标题输入区域 -->
-        <div class="edit-title-section">
-          <label for="editTitleInput" class="sr-only">Note title</label>
-          <input type="text" id="editTitleInput" class="edit-title-input" placeholder="Title (optional)">
-          <div class="title-error" id="editTitleError"></div>
-        </div>
-        <div class="form-group edit-tags-group">
-          <label for="editTagsInput">Tags</label>
-          <div id="editTagsContainer" class="tags-input-container"></div>
-        </div>
-        <div id="editContentEditor" class="edit-codemirror hidden" aria-label="Edit note content"></div>
-        <label for="editContentTextarea" class="sr-only">Note content</label>
-        <textarea id="editContentTextarea" class="edit-textarea" placeholder="Edit note content..." spellcheck="false"></textarea>
-      </div>
-      <div class="edit-modal-footer">
-        <span class="edited-time">Edited -</span>
-        <div class="edit-modal-actions">
-          <button class="text-button primary btn-save-edit" type="button" aria-label="Save note edit">Save</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 链接编辑弹窗 -->
-  <div id="linkEditModal" class="edit-modal hidden">
-    <div class="edit-modal-backdrop"></div>
-    <div class="edit-modal-container">
-      <div class="edit-modal-body">
-        <form id="linkEditForm" class="link-edit-form">
-          <div class="link-edit-layout">
-            <div class="link-edit-sidebar-pane">
-              <div class="form-group link-edit-title-group">
-                <label for="linkEditTitle">Title</label>
-                <input type="text" id="linkEditTitle" name="title" class="form-input">
-              </div>
-              <div class="form-group link-edit-url-group">
-                <label for="linkEditUrl">Link</label>
-                <input type="url" id="linkEditUrl" name="url" class="form-input">
-              </div>
-              <div class="form-group link-edit-description-group">
-                <label for="linkEditDescription">Description</label>
-                <textarea id="linkEditDescription" name="description" class="form-textarea" rows="2"></textarea>
-              </div>
-              <div id="linkEditImageGroup" class="form-group link-edit-cover-group">
-                <label for="linkEditImage">Cover image</label>
-                <input type="text" id="linkEditImage" name="image" class="form-input">
-              </div>
-            </div>
-            <div class="link-edit-media-pane">
-              <div class="link-cover-preview hidden" id="linkCoverPreview">
-                <img id="linkCoverPreviewImage" alt="Cover image preview">
-                <span id="linkCoverPreviewHint">Cover preview unavailable</span>
-              </div>
-            </div>
-            <div class="link-edit-sidebar-pane link-edit-sidebar-pane-secondary">
-              <div class="form-group edit-tags-group link-edit-tags-group">
-                <label for="linkEditTags">Tags</label>
-                <div id="linkEditTagsContainer" class="tags-input-container"></div>
-              </div>
-            </div>
+        <div class="edit-modal-footer">
+          <span class="edited-time">Edited -</span>
+          <div class="edit-modal-actions">
+            <button
+              class="text-button primary btn-save-link-edit"
+              type="button"
+              aria-label="Save link edit"
+            >
+              Save
+            </button>
           </div>
-        </form>
-      </div>
-      <div class="edit-modal-footer">
-        <span class="edited-time">Edited -</span>
-        <div class="edit-modal-actions">
-          <button class="text-button primary btn-save-link-edit" type="button" aria-label="Save link edit">Save</button>
         </div>
       </div>
     </div>
-  </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.3.1/dist/purify.min.js" integrity="sha384-80VlBZnyAwkkqtSfg5NhPyZff6nU4K/qniLBL8Jnm4KDv6jZhLiYtJbhglg/i9ww" crossorigin="anonymous"></script>
-  <script src="config.js"></script>
-  <script src="utils.js"></script>
-  <script src="tags-input.js"></script>
-  <script src="sidebar.js"></script>
-  <script src="fs.js"></script>
-  <script src="cards.js"></script>
-  <script src="editor.js"></script>
-  <script src="app.js"></script>
-</body>
-
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/dompurify@3.3.1/dist/purify.min.js"
+      integrity="sha384-80VlBZnyAwkkqtSfg5NhPyZff6nU4K/qniLBL8Jnm4KDv6jZhLiYtJbhglg/i9ww"
+      crossorigin="anonymous"
+    ></script>
+    <script src="config.js"></script>
+    <script src="utils.js"></script>
+    <script src="tags-input.js"></script>
+    <script src="sidebar.js"></script>
+    <script src="fs.js"></script>
+    <script src="cards.js"></script>
+    <script src="editor.js"></script>
+    <script src="app.js"></script>
+  </body>
 </html>

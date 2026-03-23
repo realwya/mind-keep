@@ -1381,6 +1381,9 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    top: calc(env(safe-area-inset-top, 0px) + 1rem);
+    left: calc(env(safe-area-inset-left, 0px) + 1rem);
+    bottom: auto;
   }
 
   .sidebar {
@@ -1401,6 +1404,33 @@ body {
   .sidebar-header {
     padding-top: 1.25rem;
   }
+
+  #mainContent {
+    padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .add-section {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    z-index: 300;
+    margin: 0;
+    padding: 0.75rem 1rem calc(env(safe-area-inset-bottom, 0px) + 1rem);
+  }
+
+  .add-section::before {
+    left: 0;
+    right: 0;
+    mask-image: none;
+    -webkit-mask-image: none;
+    background: color-mix(in srgb, var(--bg-secondary) 96%, transparent);
+  }
+
+  .add-box {
+    box-shadow: var(--shadow-lg);
+  }
 }
 
 @media (max-width: 600px) {
@@ -1419,16 +1449,19 @@ body {
 
   .sidebar-header {
     padding-top: 1rem;
-    flex-wrap: wrap;
+    justify-content: space-between;
+    flex-wrap: nowrap;
   }
 
   .sidebar-branding {
-    width: 100%;
-    margin-bottom: 0.5rem;
+    width: auto;
+    margin-bottom: 0;
+    min-width: 0;
   }
 
   .sidebar-actions {
     margin-left: auto;
+    flex-shrink: 0;
   }
 
   .folder-button {
@@ -1436,9 +1469,21 @@ body {
   }
 
   .sidebar-toggle {
-    bottom: 1.5rem;
+    top: calc(env(safe-area-inset-top, 0px) + 0.75rem);
+    left: calc(env(safe-area-inset-left, 0px) + 0.75rem);
+    bottom: auto;
     width: 3rem;
     height: 3rem;
+  }
+
+  #mainContent {
+    padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .add-section {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
   }
 
   .main-wrapper {
@@ -1451,6 +1496,7 @@ body {
   }
 
   .card-actions {
+    visibility: visible;
     opacity: 1;
   }
 
