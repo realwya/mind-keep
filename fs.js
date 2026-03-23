@@ -1,5 +1,44 @@
 // ===== 文件系统操作 =====
+function captureFolderState() {
+  return {
+    dirHandle,
+    items: [...items],
+    currentView,
+    searchQuery,
+    folderName: elements.folderName.textContent,
+    searchInputValue: elements.searchInput.value,
+    promptTitle: elements.promptTitle.textContent,
+    promptDescHtml: elements.promptDesc.innerHTML,
+    openFolderButtonText: elements.openFolderBtn.textContent,
+    folderPromptHidden: elements.folderPrompt.classList.contains('hidden'),
+    mainContentHidden: elements.mainContent.classList.contains('hidden')
+  };
+}
+
+function restoreFolderState(snapshot) {
+  if (!snapshot) return;
+
+  dirHandle = snapshot.dirHandle;
+  items = [...snapshot.items];
+  currentView = snapshot.currentView;
+  searchQuery = snapshot.searchQuery;
+  elements.folderName.textContent = snapshot.folderName;
+  elements.searchInput.value = snapshot.searchInputValue;
+  elements.promptTitle.textContent = snapshot.promptTitle;
+  elements.promptDesc.innerHTML = snapshot.promptDescHtml;
+  elements.openFolderBtn.textContent = snapshot.openFolderButtonText;
+  elements.folderPrompt.classList.toggle('hidden', snapshot.folderPromptHidden);
+  elements.mainContent.classList.toggle('hidden', snapshot.mainContentHidden);
+
+  syncCardsGridViewClass(currentView);
+  updateViewControls();
+  updateSidebarTags();
+  filterAndRenderItems();
+  updateEmptyState();
+}
+
 async function handleOpenFolder() {
+  const previousState = captureFolderState();
   try {
     // If handle exists, try to verify permission
     if (dirHandle) {
@@ -14,11 +53,11 @@ async function handleOpenFolder() {
     // Open directory picker
     const handle = await window.showDirectoryPicker();
     dirHandle = handle;
+    await finishSetupFolder();
     await db.set('dirHandle', handle);
 
-    await finishSetupFolder();
-
   } catch (e) {
+    restoreFolderState(previousState);
     if (e.name !== 'AbortError') {
       console.error('Failed to open folder:', e);
       showPopup('Failed to open folder. Please try again.', 'error');
@@ -27,36 +66,20 @@ async function handleOpenFolder() {
 }
 
 async function handleChangeFolder() {
-  const previousDirHandle = dirHandle;
-  const previousItems = [...items];
-  const previousView = currentView;
-  const previousFolderName = elements.folderName.textContent;
-  const previousSearchQuery = searchQuery;
+  const previousState = captureFolderState();
 
   try {
     const handle = await window.showDirectoryPicker();
-    await db.set('dirHandle', handle);
-
     dirHandle = handle;
     await finishSetupFolder();
+    await db.set('dirHandle', handle);
   } catch (e) {
     if (e.name === 'AbortError') return;
 
     console.error('Failed to change folder:', e);
     showPopup('Failed to change folder. Please try again.', 'error');
 
-    dirHandle = previousDirHandle;
-    items = previousItems;
-    currentView = previousView;
-    searchQuery = previousSearchQuery;
-    elements.folderName.textContent = previousFolderName;
-    elements.searchInput.value = previousSearchQuery;
-
-    syncCardsGridViewClass(currentView);
-    updateViewControls();
-    updateSidebarTags();
-    filterAndRenderItems();
-    updateEmptyState();
+    restoreFolderState(previousState);
   }
 }
 
@@ -192,6 +215,115 @@ async function getWritableDirectoryHandle(view = VIEW_ACTIVE) {
   throw new Error(`Unsupported view: ${view}`);
 }
 
+async function fileExistsInDirectory(dirHandle, filename) {
+  try {
+    await dirHandle.getFileHandle(filename);
+    return true;
+  } catch (e) {
+    if (e.name === 'NotFoundError') return false;
+    throw e;
+  }
+}
+
+async function ensureNoFileConflict(dirHandle, filename, excludeFilename = null, locationLabel = 'destination') {
+  if (!dirHandle) return;
+  if (excludeFilename && filename === excludeFilename) return;
+
+  const exists = await fileExistsInDirectory(dirHandle, filename);
+  if (!exists) return;
+
+  throw new Error(`A file named "${filename}" already exists in ${locationLabel}.`);
+}
+
+async function deleteFileIfExists(dirHandle, filename) {
+  if (!dirHandle || !filename) return;
+
+  try {
+    await dirHandle.removeEntry(filename);
+  } catch (e) {
+    if (e.name === 'NotFoundError') return;
+    throw e;
+  }
+}
+
+async function createUniqueTemporaryFilename(dirHandle, filename, label = 'tmp') {
+  let counter = 0;
+
+  while (true) {
+    const suffix = counter === 0 ? label : `${label}-${counter}`;
+    const candidate = `.${filename}.${suffix}`;
+    const exists = await fileExistsInDirectory(dirHandle, candidate);
+    if (!exists) return candidate;
+    counter += 1;
+  }
+}
+
+async function moveFileSafely(sourceHandle, targetHandle, filename, locationLabel) {
+  await ensureNoFileConflict(targetHandle, filename, null, locationLabel);
+
+  const fileHandle = await sourceHandle.getFileHandle(filename);
+
+  if (fileHandle.move) {
+    await fileHandle.move(targetHandle);
+    return;
+  }
+
+  const file = await fileHandle.getFile();
+  const content = await file.text();
+
+  const newFileHandle = await targetHandle.getFileHandle(filename, { create: true });
+  const writable = await newFileHandle.createWritable();
+  await writable.write(content);
+  await writable.close();
+
+  await sourceHandle.removeEntry(filename);
+}
+
+async function replaceFileWithStagedWrite(oldFilename, newFilename, content, targetView = VIEW_ACTIVE) {
+  const targetHandle = await getWritableDirectoryHandle(targetView);
+  await ensureNoFileConflict(targetHandle, newFilename, oldFilename, 'the current folder');
+
+  const stagedFilename = await createUniqueTemporaryFilename(targetHandle, newFilename, 'staged-save.tmp');
+  const backupFilename = await createUniqueTemporaryFilename(targetHandle, oldFilename, 'backup.tmp');
+  let backupCreated = false;
+  let finalCreated = false;
+
+  try {
+    await saveFile(stagedFilename, content, targetView);
+    await renameFile(oldFilename, backupFilename, targetView);
+    backupCreated = true;
+
+    await renameFile(stagedFilename, newFilename, targetView);
+    finalCreated = true;
+
+    await deleteFileIfExists(targetHandle, backupFilename);
+  } catch (e) {
+    if (finalCreated) {
+      try {
+        await deleteFileIfExists(targetHandle, newFilename);
+      } catch (cleanupError) {
+        console.warn('Failed to remove staged final file during rollback:', cleanupError);
+      }
+    }
+
+    if (backupCreated) {
+      try {
+        await renameFile(backupFilename, oldFilename, targetView);
+      } catch (rollbackError) {
+        console.warn('Failed to restore original file during rollback:', rollbackError);
+      }
+    }
+
+    try {
+      await deleteFileIfExists(targetHandle, stagedFilename);
+    } catch (cleanupError) {
+      console.warn('Failed to remove staged temp file during rollback:', cleanupError);
+    }
+
+    throw e;
+  }
+}
+
 async function saveFile(filename, content, targetView = VIEW_ACTIVE) {
   try {
     const targetHandle = await getWritableDirectoryHandle(targetView);
@@ -210,33 +342,14 @@ async function saveFile(filename, content, targetView = VIEW_ACTIVE) {
 
 async function deleteFile(filename, sourceView = VIEW_ACTIVE) {
   try {
-    // 1. Get or create .trash directory
     const trashHandle = await dirHandle.getDirectoryHandle(TRASH_DIR_NAME, { create: true });
     const sourceHandle = await getItemsDirectoryHandle(sourceView);
     if (!sourceHandle) {
       throw new Error(`Source directory for ${sourceView} not found`);
     }
 
-    // 2. Get source file handle
-    const fileHandle = await sourceHandle.getFileHandle(filename);
-
-    // 3. Try move API (Chrome 109+ and modern browsers)
-    if (fileHandle.move) {
-      await fileHandle.move(trashHandle);
-    } else {
-      // Fallback: copy then delete
-      const file = await fileHandle.getFile();
-      const content = await file.text();
-
-      // Create in trash
-      const newFileHandle = await trashHandle.getFileHandle(filename, { create: true });
-      const writable = await newFileHandle.createWritable();
-      await writable.write(content);
-      await writable.close();
-
-      // Delete original file
-      await sourceHandle.removeEntry(filename);
-    }
+    await ensureNoFileConflict(trashHandle, filename, null, 'Trash');
+    await moveFileSafely(sourceHandle, trashHandle, filename, 'Trash');
   } catch (e) {
     console.error('Move to trash failed:', e);
     throw e;
@@ -246,21 +359,8 @@ async function deleteFile(filename, sourceView = VIEW_ACTIVE) {
 async function archiveFile(filename) {
   try {
     const archiveHandle = await dirHandle.getDirectoryHandle(ARCHIVE_DIR_NAME, { create: true });
-    const fileHandle = await dirHandle.getFileHandle(filename);
-
-    if (fileHandle.move) {
-      await fileHandle.move(archiveHandle);
-    } else {
-      const file = await fileHandle.getFile();
-      const content = await file.text();
-
-      const newFileHandle = await archiveHandle.getFileHandle(filename, { create: true });
-      const writable = await newFileHandle.createWritable();
-      await writable.write(content);
-      await writable.close();
-
-      await dirHandle.removeEntry(filename);
-    }
+    await ensureNoFileConflict(archiveHandle, filename, null, ARCHIVE_DIR_NAME);
+    await moveFileSafely(dirHandle, archiveHandle, filename, ARCHIVE_DIR_NAME);
   } catch (e) {
     console.error('Move to archive failed:', e);
     throw e;
@@ -270,21 +370,8 @@ async function archiveFile(filename) {
 async function restoreFile(filename) {
   try {
     const trashHandle = await dirHandle.getDirectoryHandle(TRASH_DIR_NAME);
-    const fileHandle = await trashHandle.getFileHandle(filename);
-
-    if (fileHandle.move) {
-      await fileHandle.move(dirHandle);
-    } else {
-      const file = await fileHandle.getFile();
-      const content = await file.text();
-
-      const newFileHandle = await dirHandle.getFileHandle(filename, { create: true });
-      const writable = await newFileHandle.createWritable();
-      await writable.write(content);
-      await writable.close();
-
-      await trashHandle.removeEntry(filename);
-    }
+    await ensureNoFileConflict(dirHandle, filename, null, 'Notes');
+    await moveFileSafely(trashHandle, dirHandle, filename, 'Notes');
   } catch (e) {
     console.error('Restore file failed:', e);
     throw e;
@@ -294,21 +381,8 @@ async function restoreFile(filename) {
 async function restoreArchiveFile(filename) {
   try {
     const archiveHandle = await dirHandle.getDirectoryHandle(ARCHIVE_DIR_NAME);
-    const fileHandle = await archiveHandle.getFileHandle(filename);
-
-    if (fileHandle.move) {
-      await fileHandle.move(dirHandle);
-    } else {
-      const file = await fileHandle.getFile();
-      const content = await file.text();
-
-      const newFileHandle = await dirHandle.getFileHandle(filename, { create: true });
-      const writable = await newFileHandle.createWritable();
-      await writable.write(content);
-      await writable.close();
-
-      await archiveHandle.removeEntry(filename);
-    }
+    await ensureNoFileConflict(dirHandle, filename, null, 'Notes');
+    await moveFileSafely(archiveHandle, dirHandle, filename, 'Notes');
   } catch (e) {
     console.error('Restore archive file failed:', e);
     throw e;
@@ -344,15 +418,14 @@ async function deleteTrashFile(filename) {
 async function renameFile(oldFilename, newFilename, targetView = VIEW_ACTIVE) {
   try {
     const targetHandle = await getWritableDirectoryHandle(targetView);
+    await ensureNoFileConflict(targetHandle, newFilename, oldFilename, 'the current folder');
     const fileHandle = await targetHandle.getFileHandle(oldFilename);
 
-    // Prefer move API (Chrome 109+)
     if (fileHandle.move) {
       await fileHandle.move(targetHandle, newFilename);
       return;
     }
 
-    // Fallback: copy new file then delete old
     const file = await fileHandle.getFile();
     const content = await file.text();
 

@@ -35,13 +35,13 @@ if ! rg -q 'if \(currentView === VIEW_TRASH\) \{' app.js; then
   exit 1
 fi
 
-if ! rg -q 'await renameFile\(oldFilename, newFilename, currentView\)' editor.js; then
-  echo "FAIL: note rename in archive should stay in current view directory"
+if ! rg -q 'await replaceFileWithStagedWrite\(oldFilename, newFilename, finalContent, currentView\)' editor.js; then
+  echo "FAIL: renamed note save in archive should stay in current view directory via staged write"
   exit 1
 fi
 
 if ! rg -q 'await saveFile\(newFilename, finalContent, currentView\)' editor.js; then
-  echo "FAIL: note save in archive should stay in current view directory"
+  echo "FAIL: unchanged note save in archive should stay in current view directory"
   exit 1
 fi
 

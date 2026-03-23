@@ -321,13 +321,11 @@ async function saveEditedNote() {
   editModal.saveBtn.textContent = 'Saving...';
 
   try {
-    // Rename file if title changed
     if (hasFilenameChange) {
-      await renameFile(oldFilename, newFilename, currentView);
+      await replaceFileWithStagedWrite(oldFilename, newFilename, finalContent, currentView);
+    } else {
+      await saveFile(newFilename, finalContent, currentView);
     }
-
-    // Save content to file (using new filename)
-    await saveFile(newFilename, finalContent, currentView);
 
     // Update in-memory state
     const index = items.findIndex(i => i.id === currentEditingItem.id);
